@@ -1,0 +1,80 @@
+.carousel {
+    max-width: 300px;
+    max-height: 300px;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.carousel-main {
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.carousel-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.carousel-content p {
+    margin: 0;
+    text-align: center;
+}
+
+.carousel-content p span {
+    background: green;
+    color: #fff;
+}
+
+.carousel-pagination {
+    text-align: center;
+}
+
+.carousel-pagination button.active {
+    font-weight: bold;
+}
+
+body {
+    margin: 0;
+}
+
+main {
+    display: flex;
+    min-height: 100vh;
+}
+
+main > div {
+    flex-grow: 1;
+}
+
+#facet-selection {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.facet-accept-button {
+    margin-top: 20px;
+}
+
+#case-facets table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#case-facets th {
+    border: 1px solid #000;
+}
+
+#case-facets td {
+    border: 1px solid #000;
+}
+
+#case-facets tr.active td {
+    background: yellow;
+}

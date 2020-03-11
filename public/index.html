@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <link rel="stylesheet" href="index.css" />
+    <script src="index.js"></script>
+  </head>
+  <body>
+    <main class="loading">
+      <div id="facet-selection"></div>
+
+      <div id="case-facets">
+        <table>
+          <thead>
+            <tr>
+              <th>Facet</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
+  </body>
+</html>
+
+<template id="date-facet-template">
+  <h2></h2>
+  <div class="date-carousel">
+    <div class="carousel">
+      <div class="carousel-main">
+        <button class="carousel-prev">←</button>
+        <div class="carousel-content">
+          <p></p>
+        </div>
+        <button class="carousel-next">→</button>
+      </div>
+      <div class="current-option-value"></div>
+      <div class="carousel-pagination"></div>
+    </div>
+  </div>
+  <div>
+    <button type="button" class="facet-accept-button"></button>
+  </div>
+</template>
+
+
+<template id="boolean-facet-template">
+  <h2></h2>
+  <div class="date-carousel">
+    <h3>Found Factors</h3>
+    <div class="carousel">
+      <div class="carousel-main">
+        <button class="carousel-prev">←</button>
+        <div class="carousel-content">
+          <p></p>
+        </div>
+        <button class="carousel-next">→</button>
+      </div>
+      <h3>Factor value</h3>
+      <div class="facet-value-buttons">
+        <button type="button" data-value="Yes">Yes</button>
+        <button type="button" data-value="N/A">N/A</button>
+        <button type="button" data-value="No">No</button>
+      </div>
+      <div class="carousel-pagination"></div>
+    </div>
+  </div>
+  <h3>Facet value</h3>
+  <div class="facet-accept-buttons">
+    <button type="button" data-value="Yes">Yes</button>
+    <button type="button" cdata-value="No">No</button>
+  </div>
+</template>
