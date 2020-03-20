@@ -30,8 +30,12 @@ BasicCarousel.prototype.init = function(slides, $mountNode, { cycle, onSlideChan
     this.$carouselPagination.appendChild(paginationButton);
   });
 
-  this.$carouselPrevButton.onclick = this.previousNext.bind(this, -1);
-  this.$carouselNextButton.onclick = this.previousNext.bind(this, +1);
+  if (this.$carouselPrevButton) {
+    this.$carouselPrevButton.onclick = this.previousNext.bind(this, -1);
+  }
+  if (this.$carouselNextButton) {
+    this.$carouselNextButton.onclick = this.previousNext.bind(this, +1);
+  }
 
   this.loadSlide(this.currentSlideIndex);
 };
@@ -44,12 +48,17 @@ BasicCarousel.prototype.loadSlide = function(i) {
   this.renderCarouselSlide(this.slides[i]);
   this.onSlideChange(this.slides[i]);
 
-  this.$carouselNextButton.disabled = false;
-  this.$carouselPrevButton.disabled = false;
+  if (this.$carouselPrevButton) {
+    this.$carouselPrevButton.disabled = false;
+  }
+  if (this.$carouselPrevButton) {
+    this.$carouselPrevButton.disabled = false;
+  }
+ 
 
-  if (i === 0 && !this.cycle) {
+  if (i === 0 && !this.cycle && this.$carouselPrevButton) {
     this.$carouselPrevButton.disabled = true;
-  } else if (i === this.slides.length - 1 && !this.cycle) {
+  } else if (i === this.slides.length - 1 && !this.cycle && this.$carouselPrevButton) {
     this.$carouselNextButton.disabled = true;
   }
 
@@ -85,12 +94,12 @@ DateFacet.prototype.init = function(facet, $mountNode, saveFacet, isLastFacet) {
   $mountNode.appendChild(facetTemplate.cloneNode(true));
 
   const $facetAcceptButton = $(".facet-accept-button", $mountNode);
-  const $facetTitle = $("h2", $mountNode);
+  const $facetTitle = $("h2 span", $mountNode);
   const $currentOptionValue = $(".current-option-value", $mountNode);
 
   $facetTitle.innerText = facet.name;
 
-  $facetAcceptButton.innerText = !isLastFacet ? "Save and next facet →" : "Save";
+  $facetAcceptButton.innerText = "Accept";
 
   $facetAcceptButton.onclick = saveFacet;
 
@@ -121,7 +130,7 @@ BooleanFacet.prototype.init = function(facet, $mountNode, saveFacet, isLastFacet
   this.facet = facet;
   this.slideAnswers = {};
 
-  const $facetTitle = $("h2", $mountNode);
+  const $facetTitle = $("h2 span", $mountNode);
   const $facetSlideValueButtons = $(".facet-value-buttons button", $mountNode);
 
   $facetSlideValueButtons.forEach(b => {
@@ -151,10 +160,10 @@ BooleanFacet.prototype.init = function(facet, $mountNode, saveFacet, isLastFacet
     },
     getPaginationButtonsValues: (button, buttonIndex) => {
       const currentSlideAnswer = this.slideAnswers[buttonIndex];
-      let buttonText = "-";
+      let buttonText = "?";
       if (currentSlideAnswer) {
         if (currentSlideAnswer == "Yes") {
-          buttonText = "/";
+          buttonText = "✓";
         } else if (currentSlideAnswer === "N/A") {
           buttonText = "N/A";
         } else {
@@ -182,7 +191,7 @@ BooleanFacet.prototype.carousel = new BasicCarousel();
 
 window.onload = () => {
   const $caseFacetsTableBody = $("#case-facets tbody");
-  const $facetSelection = $("#facet-selection");
+  const $facetSelection = $("main");
 
   let currentFacetId;
   let currentCase;
@@ -296,6 +305,6 @@ window.onload = () => {
   if (caseId) {
     loadCase(caseId);
   } else {
-    alert('No case id')
+    alert("No case id");
   }
 };
