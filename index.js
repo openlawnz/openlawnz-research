@@ -32,7 +32,7 @@ async function getDatabasePool(envFileName) {
       throw new Error(`Missing required line/s in env file ${envFileName}`);
   }
 
-  const conn = {
+  let conn = {
       host: process.env["DB_HOST"],
       database: process.env["DB_NAME"],
       port: process.env["PORT"],
