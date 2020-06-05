@@ -1,0 +1,254 @@
+[
+    {
+        "id": "ec5187f3-de91-461e-beef-504675f687ac",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "accident",
+        "whole_word": true
+    },
+    {
+        "id": "44016662-4e4d-41a4-b973-0449f05ac3b5",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "account",
+        "whole_word": false
+    },
+    {
+        "id": "238abe5f-6f0b-44aa-95d8-0d7817903317",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "ageing",
+        "whole_word": true
+    },
+    {
+        "id": "9710a592-437c-473c-829b-618649a9a840",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "aris",
+        "whole_word": false
+    },
+    {
+        "id": "ed7e89b9-7c14-4683-8ba8-3cb22d644934",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "attribut",
+        "whole_word": false
+    },
+    {
+        "id": "8bd09bd4-0834-4121-aed3-bfc326859243",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "because \\(of\\)",
+        "whole_word": true
+    },
+    {
+        "id": "f9bc768a-0d02-4875-8660-1a97d01736a8",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "blame",
+        "whole_word": true
+    },
+    {
+        "id": "8e5109fc-d680-4872-b5fa-502a9be41e09",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "caus",
+        "whole_word": false
+    },
+    {
+        "id": "e055ca05-5e29-4ccb-b8b6-a45604b1cb80",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "caused",
+        "whole_word": true
+    },
+    {
+        "id": "fe02e93d-26b7-47ec-9346-8bbef70970c0",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "circumstance",
+        "whole_word": false
+    },
+    {
+        "id": "a06a18db-5d28-4376-b887-5f261a141a84",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "connect",
+        "whole_word": false
+    },
+    {
+        "id": "37bfa3e0-cd7f-4cff-987b-10745f4a39a9",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "connection",
+        "whole_word": true
+    },
+    {
+        "id": "30de3ce6-26b9-4f47-a7a2-9d527bb0a23d",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "conseq",
+        "whole_word": false
+    },
+    {
+        "id": "c47d660e-d9e8-4255-9421-8eed35bbd4f1",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "contribut",
+        "whole_word": false
+    },
+    {
+        "id": "75842952-55b9-4267-a0ce-19ae679a76a1",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "degenerat",
+        "whole_word": false
+    },
+    {
+        "id": "d792e820-be29-4cd5-9e9a-7a057fac4c20",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "disab",
+        "whole_word": false
+    },
+    {
+        "id": "ea96f2b2-ea13-4f1d-a933-7722cd12592e",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "disease",
+        "whole_word": true
+    },
+    {
+        "id": "0b236722-8a82-4d55-8896-095852edddc1",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "environment",
+        "whole_word": true
+    },
+    {
+        "id": "24d81a09-f3a8-4909-aaae-a57e257fb65e",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "exit",
+        "whole_word": true
+    },
+    {
+        "id": "01ab1807-4277-4a45-82fd-758598cb1ad6",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "fault",
+        "whole_word": true
+    },
+    {
+        "id": "d25cf7ef-b757-477a-aa89-7012315b40a1",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "in respect of",
+        "whole_word": true
+    },
+    {
+        "id": "9bcce439-6acf-4da9-8486-97cd850b4ee4",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "infection",
+        "whole_word": true
+    },
+    {
+        "id": "d17d601c-9aa8-4030-a210-b136ce3c988d",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "link",
+        "whole_word": true
+    },
+    {
+        "id": "cc46c2e1-aeb6-44a7-ab64-8693ebe3d39d",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "material extent",
+        "whole_word": true
+    },
+    {
+        "id": "f6adc723-6894-4904-88dc-e6285671c380",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "mental",
+        "whole_word": true
+    },
+    {
+        "id": "76644973-f7d1-47cc-8cb1-adef2c137ff8",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "necessary",
+        "whole_word": true
+    },
+    {
+        "id": "2def512a-f7ed-43c5-bd07-c28e6b0929ae",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "necessary part",
+        "whole_word": true
+    },
+    {        
+        "id": "b10c1027-b5ce-46d5-87d3-60cdd1ccbfa7",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "non-employment",
+        "whole_word": true
+    },
+    {
+        "id": "f7148e5f-532b-4c7a-a2fd-1637721853b7",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "ordinary",        
+        "whole_word": true
+    },
+    {
+        "id": "f6a76a13-a07e-42b4-84bf-516d1fcec93e",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "ordinary consequence",
+        "whole_word": true
+    },
+    {
+        "id": "3a30732a-0061-4e6e-8fb7-599833281b0d",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "physical",
+        "whole_word": true
+    },
+    {
+        "id": "b437f5e1-1d81-415d-8d30-b5de9a60f56a",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "proxim",
+        "whole_word": false
+    },
+    {
+        "id": "c9548173-83bd-4aa6-9efc-a762e84f14ef",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "result",
+        "whole_word": false
+    },
+    {
+        "id": "bd2f6acb-7e88-4a72-8362-0c85c7753903",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "risk",
+        "whole_word": true
+    },
+    {
+        "id": "62b1aa28-edd3-4c18-b89d-52d49434aed4",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "scheme",
+        "whole_word": true
+    },
+    {
+        "id": "a345bbbd-7f1d-4588-8375-ded1bf048e95",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "solely",
+        "whole_word": true
+    },
+    {
+        "id": "98c019f0-3411-4741-aea4-ccfb7f0fd785",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "substantially",
+        "whole_word": true
+    },
+    {
+        "id": "0716028b-34d6-4ff2-8e17-37594144ce12",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "suffer",
+        "whole_word": false
+    },
+    {
+        "id": "e5c60beb-0ecc-4ddd-8313-98e5352225b4",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "underlying",
+        "whole_word": true
+    },
+    {
+        "id": "01152a9a-19cd-4d7e-a30f-fd0562f43908",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "wholly",
+        "whole_word": true
+    },
+    {
+        "id": "bbecd113-72a8-489f-b0e7-d739342125a8",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "work-related",
+        "whole_word": true
+    },
+    {
+        "id": "bf88f94d-bf23-44e0-b0e0-27e27b68ed4f",
+        "facet_id": "97251907-2437-4622-b61c-e076f9867d16",
+        "value": "resulting",
+        "whole_word": true
+    }
+]
