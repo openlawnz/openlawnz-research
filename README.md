@@ -2,7 +2,7 @@
 
 This project is where humans can manually assess and process data extracted from a parser.
 
-    yarn install
-    yarn start
+    npm install
+    npm start
 
-Visit: http://localhost:8082/?caseId=2
+Visit: http://localhost:8082

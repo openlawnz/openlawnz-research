@@ -1,0 +1,8 @@
+version: 0.2
+
+artifacts:
+  files:
+    - index.js
+    - package.json
+    - package-lock.json
+    - public/**/*
