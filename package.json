@@ -2,8 +2,9 @@
   "name": "openlawnz-human-refinement-centre",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "scripts": {
+    "start": "node index",
     "dev": "nodemon -r dotenv/config index"
   },
   "dependencies": {
