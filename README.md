@@ -3,6 +3,6 @@
 This project is where humans can manually assess and process data extracted from a parser.
 
     npm install
-    npm start
+    npm run dev
 
 Visit: http://localhost:8082
