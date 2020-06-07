@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-const port = 8082;
+const port = process.env.PORT || 8082;
 const basicAuth = require('express-basic-auth');
 const bodyParser = require('body-parser');
 const uuidv4 = require("uuid").v4;
