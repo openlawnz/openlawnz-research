@@ -1,5 +1,7 @@
 /* General styles */
-
+* {
+  box-sizing: border-box;
+}
 body {
   font-family: "Nunito";
   margin: 0;
@@ -14,6 +16,9 @@ fieldset label {
   font-size: 14px;
 }
 
+.loading main, .loading #case-facets{
+  visibility: collapse;
+}
 
 .button {
   background: #cf9768;
@@ -53,6 +58,7 @@ body > header h1 {
 
 #wrap {
   display: flex;
+  flex: 1;
   width: 100%;
 }
 
@@ -63,7 +69,6 @@ body > header h1 {
 
 #wrap nav {
   background: #F6F6F6;
-  height: calc(100vh - 93px);
   padding: 20px;
   box-sizing: border-box;
   width: 20vw;
@@ -73,10 +78,48 @@ body > header h1 {
   color: #3f7578;
 }
 
+#casesList {
+  position: relative;
+  height: 100%;
+}
+
+#casesList input[type=search] {
+
+}
+
+#caseListTable {
+  position: relative;
+  height: 100%;
+  overflow: auto;
+}
+
+#casesList table {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#casesList table tr.active {
+  background-color: rgba(99, 202, 135, 0.5);
+}
+
+#casesList table th {
+  font-size: 12px;
+  text-align: left;
+}
+
+#casesList table td {
+  font-size: 10px;
+}
+
+#casesList table td a {
+  color: #333;
+}
+
 main {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   flex-grow: 1;
   width: 50vw;
   padding: 20px;
@@ -95,7 +138,6 @@ main h2 span {
 
 
 #case-facets {
-  width: 30vw;
   padding: 20px 20px 20px 0;
   box-sizing: border-box;
 }
@@ -123,6 +165,10 @@ main h2 span {
 #case-facets tr.active td {
   background: #3f7578;
   color: #fff;
+}
+
+#case-facets tr td:last-child {
+  text-align: center;
 }
 
 
@@ -160,127 +206,95 @@ main h2 span {
   line-height: 1;
 }
 
-/* Carousel */
-
-.facet-content .carousel-pagination {
-  margin-left: 10px;
+.hoverable {
+  position: relative;
+}
+.hoverable span {
+  display: none;
+}
+.hoverable:hover span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  white-space: nowrap;
+  font-size: 12px;
+  border: 1px solid black;
+  padding: 2px;
+  transform: translateY(-100%);
 }
 
-.facet-content .carousel-pagination button {
-  border: 1px solid #333;
-  background: #fff;
-  margin-left: 5px;
-  border-radius: 3px;
-  width: 20px;
-  height: 20px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+#facetBooleanHeadingDetails {
+  margin: 1em 0;
 }
 
-.facet-content .carousel {
-  margin: 0 auto;
-  height: 200px;
-  overflow: auto;
+#pdf {
   display: flex;
-  flex-direction: column;
-}
-
-.facet-content .carousel-main {
-  display: flex;
+  position: relative;
   flex-grow: 1;
   align-items: center;
-  justify-content: space-between;
 }
-
-.facet-content .carousel-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+#pdfViewerOuter {
+  width: 595px;
 }
-
-.facet-content .carousel-content p {
-  margin: 0;
-  text-align: center;
-}
-
-.facet-content .carousel-content p span {
-  background: #3f7578;
-  color: #fff;
-}
-
-.facet-content .carousel-pagination {
-  text-align: center;
-}
-
-.facet-content .carousel-pagination button.active {
-  font-weight: bold;
-  background: #333;
-  color: #fff;
-}
-
-.facet-content .carousel-prev,
-.facet-content .carousel-next {
-  -webkit-appearance: none;
-  border: none;
-  background: #fff;
-  color: #333;
-  font-size: 30px;
-  cursor: pointer;
-}
-
-.facet-content .carousel-prev:hover,
-.facet-content .carousel-next:hover {
-  color: #000;
-}
-
-.facet-content .carousel-prev:disabled,
-.facet-content .carousel-next:disabled {
-  opacity: 0.5;
-}
-
-.facet-accept-buttons {
-  display: flex;
-  align-items: center;
-}
-
-.facet-accept-buttons span {
-  font-weight: bold;
-  margin-right: 10px;
-}
-
-.facet-accept-buttons button {
-  padding: 7px 14px;
-  font-size: 14px;
-  margin-left: 5px;
-}
-
-/* Date facet control */
-
-.date-facet-control .date-carousel {
-    flex-grow: 1;
-    width: 100%;
-}
-
-.date-facet-control .current-option-value {
-  text-align: center;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-/* Boolean facet control */
-
-.boolean-facet-control .boolean-carousel {
-  flex-grow: 1;
+#pdfViewer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
   width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  border: 2px solid #000;
 }
 
-.boolean-facet-control .boolean-carousel .carousel-main {
-  justify-content: center;
+#pdfViewer.dragging {
+  scroll-behavior: initial;
 }
 
-.boolean-facet-control .facet-value-buttons button {
-  padding: 5px 10px;
-  background: #00a8b3;
+#saveHeading {
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+#pdfMinimap {
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 610px;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+#pdfMinimapOuter {
+  position: relative;
+  flex-grow: 1;
+  border: 2px solid #000;
+  overflow: hidden;
+  margin: 15px 0;
+}
+
+#minimapInner {
+  transform: translateY(0);
+  height: 100%;
+}
+
+#submitBoolean {
+  margin-bottom: 15px;
+}
+
+#submitDate {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+#submitDate select {
+  font-size: 11px;
+  width: 100%;
+  overflow: visible;
+  margin-bottom: 5px;
 }

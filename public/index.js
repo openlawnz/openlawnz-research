@@ -1,277 +1,201 @@
+const MINIMAP_SCALE = 0.2;
+
+const facetParserWorkers = [];
+let facets = null;
+let facetBoundingBoxes = {};
+
+let currentFacetId;
+let currentCase;
+let isLastFacet;
+
+let viewportNavigator;
+let $caseFacetsTableBody;
+
 const $ = (selector, context) => {
   const found = (context || document).querySelectorAll(selector);
   return found.length > 1 ? found : found[0];
 };
 
-const BasicCarousel = function() {};
+const renderPDFCanvas = (attachToEl, viewport, page) => {
+  
 
-BasicCarousel.prototype.init = function(slides, $mountNode, { cycle, onSlideChange, getPaginationButtonsValues }) {
-  this.$carouselContent = $(".carousel-content p", $mountNode);
-  this.$carouselPrevButton = $(".carousel-prev", $mountNode);
-  this.$carouselNextButton = $(".carousel-next", $mountNode);
-  this.$carouselPagination = $(".carousel-pagination", $mountNode);
+  let pdfCanvas = document.createElement('canvas');
+  attachToEl.appendChild(pdfCanvas);
+  let pdfContext = pdfCanvas.getContext('2d');
+  pdfCanvas.style.display = "block";
+  pdfCanvas.height = viewport.height;
+  pdfCanvas.width = viewport.width;
 
-  this.slides = slides;
-  this.paginationButtons = [];
-  this.currentSlideIndex = 0;
-  this.cycle = cycle;
-  this.onSlideChange = onSlideChange || function() {};
-  this.getPaginationButtonsValues = getPaginationButtonsValues;
+  page.render({
+    canvasContext: pdfContext,
+    viewport: viewport
+});
 
-  // Set pagination
-  slides.forEach((slide, i) => {
-    const paginationButton = document.createElement("button");
-    if (!getPaginationButtonsValues) {
-      paginationButton.innerText = i + 1;
-    }
+}
 
-    paginationButton.onclick = this.loadSlide.bind(this, i);
-    this.paginationButtons.push(paginationButton);
-    this.$carouselPagination.appendChild(paginationButton);
-  });
+const loadPage = async (pageNumber, state) => {
+  const page = await state.doc.getPage(pageNumber);
 
-  if (this.$carouselPrevButton) {
-    this.$carouselPrevButton.onclick = this.previousNext.bind(this, -1);
-  }
-  if (this.$carouselNextButton) {
-    this.$carouselNextButton.onclick = this.previousNext.bind(this, +1);
+  var pdfViewport = page.getViewport({ scale: 1.0 });
+  var pdfMinimapViewport = page.getViewport({ scale: MINIMAP_SCALE });
+
+  renderPDFCanvas(state.pdfEl, pdfViewport, page);
+  renderPDFCanvas(state.pdfMinimapEl, pdfMinimapViewport, page);
+
+  if(state.pageWidth == -1) {
+      state.pageWidth = pdfViewport.width;
+      state.pageHeight = pdfViewport.height;
+      state.docHeight = state.pageHeight * state.numPages;
   }
 
-  this.loadSlide(this.currentSlideIndex);
+  return state;
 };
 
-BasicCarousel.prototype.renderCarouselSlide = function(slide) {
-  this.$carouselContent.innerHTML = slide.text.replace(slide.highlight, `<span>${slide.highlight}</span>`);
-};
+const processPDF = async (pdfURL, pdfEl, pdfMinimapEl) => {
+  const loadingTask = pdfjsLib.getDocument(pdfURL);
+  const doc = await loadingTask.promise;
+  const numPages = doc.numPages;
 
-BasicCarousel.prototype.loadSlide = function(i) {
-  this.renderCarouselSlide(this.slides[i]);
-  this.onSlideChange(this.slides[i]);
+  const state = {
+      doc,
+      pdfEl,
+      pdfMinimapEl,
+      pageWidth: -1,
+      pageHeight: -1,
+      docHeight: -1,
+      numPages: doc.numPages
+    };
 
-  if (this.$carouselPrevButton) {
-    this.$carouselPrevButton.disabled = false;
-  }
-  if (this.$carouselPrevButton) {
-    this.$carouselPrevButton.disabled = false;
-  }
- 
-
-  if (i === 0 && !this.cycle && this.$carouselPrevButton) {
-    this.$carouselPrevButton.disabled = true;
-  } else if (i === this.slides.length - 1 && !this.cycle && this.$carouselPrevButton) {
-    this.$carouselNextButton.disabled = true;
+  for (let i = 0; i < numPages; i++) {
+    await loadPage(i + 1, state);
   }
 
-  this.paginationButtons.forEach((b, bi) => {
-    if (bi === i) {
-      b.classList.add("active");
-    } else {
-      b.classList.remove("active");
-    }
-
-    if (this.getPaginationButtonsValues) {
-      this.getPaginationButtonsValues(b, bi);
-    }
-  });
-  this.currentSlideIndex = i;
+  return state;
 };
 
-BasicCarousel.prototype.previousNext = function(i) {
-  let newSlideIndex = this.currentSlideIndex + i;
-  if (newSlideIndex === this.slides.length) {
-    newSlideIndex = this.cycle ? 0 : this.slides.length - 1;
-  } else if (newSlideIndex === -1) {
-    newSlideIndex = this.cycle ? this.slides.length - 1 : 0;
-  }
-  this.loadSlide(newSlideIndex);
-};
+const addBoundingBoxes = (facetData) => {
 
-const DateFacet = function() {};
+  facetBoundingBoxes[facetData.id] = facetData.boundingBoxes;
 
-DateFacet.prototype.init = function(facet, $mountNode, saveFacet, isLastFacet) {
-  const facetTemplate = document.getElementById("date-facet-template").content;
+}
 
-  $mountNode.appendChild(facetTemplate.cloneNode(true));
 
-  const $facetAcceptButton = $(".facet-accept-button", $mountNode);
-  const $facetTitle = $("h2 span", $mountNode);
-  const $currentOptionValue = $(".current-option-value", $mountNode);
+const sendToWorkers = async (facetCase, caseData) => {
 
-  $facetTitle.innerText = facet.name;
+  return new Promise((resolve, reject) => {
 
-  $facetAcceptButton.innerText = "Accept";
+    facetCase.facets.forEach(f => {
 
-  $facetAcceptButton.onclick = saveFacet;
+      const facetParserWorker = new Worker('facetTextParser.js');
 
-  this.carousel.init(facet.options, $mountNode, {
-    cycle: true,
-    onSlideChange: currentOption => {
-      // Load the answer
+      facetParserWorkers.push(facetParserWorker);
 
-      $currentOptionValue.innerText = currentOption.highlight;
-    }
-  });
-};
-
-DateFacet.prototype.carousel = new BasicCarousel();
-
-//----------------------------------------
-// Boolean Facet
-//----------------------------------------
-
-const BooleanFacet = function() {};
-
-BooleanFacet.prototype.init = function(facet, $mountNode, saveFacet, isLastFacet) {
-  const facetTemplate = document.getElementById("boolean-facet-template").content;
-
-  $mountNode.appendChild(facetTemplate.cloneNode(true));
-
-  this.$facetAcceptButtons = $(".facet-accept-buttons button", $mountNode);
-  this.facet = facet;
-  this.slideAnswers = {};
-
-  const $facetTitle = $("h2 span", $mountNode);
-  const $facetSlideValueButtons = $(".facet-value-buttons button", $mountNode);
-
-  $facetSlideValueButtons.forEach(b => {
-    b.onclick = function() {
-      this.slideAnswers[this.carousel.currentSlideIndex] = b.dataset.value;
-
-      if (!this.slideAnswers[this.carousel.currentSlideIndex + 1]) {
-        this.carousel.previousNext(+1);
-      } else {
-        this.carousel.loadSlide(this.carousel.currentSlideIndex);
+      const payload = {
+        facetData: f,
+        caseData
       }
-    }.bind(this);
-  });
 
-  this.$facetAcceptButtons.forEach(b => {
-    b.onclick = function() {
-      saveFacet({ overall: b.dataset.value === "Yes", answers: this.slideAnswers });
-    }.bind(this);
-  });
-
-  $facetTitle.innerText = facet.name;
-
-  this.carousel.init(facet.options, $mountNode, {
-    cycle: false,
-    onSlideChange: currentOption => {
-      this.refreshSubmitButtons();
-    },
-    getPaginationButtonsValues: (button, buttonIndex) => {
-      const currentSlideAnswer = this.slideAnswers[buttonIndex];
-      let buttonText = "?";
-      if (currentSlideAnswer) {
-        if (currentSlideAnswer == "Yes") {
-          buttonText = "✓";
-        } else if (currentSlideAnswer === "N/A") {
-          buttonText = "N/A";
-        } else {
-          buttonText = "x";
+      facetParserWorker.onmessage = function(e) {
+        addBoundingBoxes(e.data);
+        if(Object.keys(facetBoundingBoxes).length === facetCase.facets.length) {
+          resolve()
         }
       }
-      button.innerText = buttonText;
-    }
+
+      facetParserWorker.postMessage(JSON.stringify(payload));
+
+    });
+
   });
-};
 
-BooleanFacet.prototype.refreshSubmitButtons = function() {
-  if (Object.keys(this.slideAnswers).length === this.facet.options.length) {
-    this.$facetAcceptButtons.forEach(b => {
-      b.disabled = false;
-    });
-  } else {
-    this.$facetAcceptButtons.forEach(b => {
-      b.disabled = true;
-    });
+}
+
+const loadCaseData = async caseMetaData => {
+
+  const json = await fetch(caseMetaData.pdfJSON).then(r => r.json());
+
+  return json;
+
+}
+
+const loadCase = async caseId => {
+
+  currentCase = await fetch(`/cases/${caseId}`).then(t => t.json());
+  
+  currentCaseData = await loadCaseData(currentCase.caseMeta);
+
+  let isDraggingViewport = false;
+  
+  [workerResult, pdfState] = await Promise.all([
+    sendToWorkers(currentCase, currentCaseData),
+    processPDF(currentCase.caseMeta.pdfURL, pdfViewer, pdfMinimapInner)
+  ]);
+
+  pdfViewer.onscroll = function(e) {
+    pdfMinimapInner.style.transform = `translateY(-${pdfViewer.scrollTop * MINIMAP_SCALE}px)`;
   }
-};
 
-BooleanFacet.prototype.carousel = new BasicCarousel();
+  pdfMinimapOuter.onclick = function(e) {
 
-window.onload = () => {
-  const $caseFacetsTableBody = $("#case-facets tbody");
-  const $facetSelection = $("main");
+    if(isDraggingViewport) {
+      return;
+    }
+      
+    const startY = e.clientY - pdfMinimapOuter.getClientRects()[0].top;
+    const clickY = parseFloat(pdfMinimapInner.style.transform ? pdfMinimapInner.style.transform.match(/translateY\((.*)px/)[1] : 0);
+    const calculatedY = -(startY) + clickY + 10;
 
-  let currentFacetId;
-  let currentCase;
-  let isLastFacet;
+    pdfViewer.scrollTop = Math.abs(calculatedY)/MINIMAP_SCALE;
 
-  const renderFacet = isLastFacet => {
-    const facet = currentCase.facets.find(f => f.id == currentFacetId);
-    $facetSelection.innerHTML = null;
+  }
 
-    // Choose the control
-    if (facet.type === "date") {
-      new DateFacet().init(facet, $facetSelection, saveFacet, isLastFacet);
-    } else {
-      new BooleanFacet().init(facet, $facetSelection, saveFacet, isLastFacet);
+  viewportNavigator = document.createElement('div');
+  pdfMinimapOuter.appendChild(viewportNavigator)
+  viewportNavigator.classList.add("viewportNavigator")
+  viewportNavigator.style.backgroundColor = "rgba(0,0,0,0.2)";
+  viewportNavigator.style.width = "100%";
+  viewportNavigator.style.height = (pdfViewer.getClientRects()[0].height * MINIMAP_SCALE) + "px";
+  viewportNavigator.style.position = "absolute";
+  viewportNavigator.style.top = 0;
+  viewportNavigator.style.left = 0;
+  viewportNavigator.style.zIndex = 4;
+  
+    let lastPos = 0;
+    // Add drag behaviour
+    viewportNavigator.onmousedown = () => {
+      isDraggingViewport = true;
+      pdfViewer.classList.add("dragging");
+      
+      document.body.onmousemove = (e) => {
+        
+
+          const delta = e.clientY - lastPos;
+          
+          pdfViewer.scrollTop = pdfViewer.scrollTop + (delta/MINIMAP_SCALE);
+
+          
+        lastPos = e.clientY
+        
+        
+      }
+
+      document.body.onmouseup = () => {
+        
+        pdfViewer.classList.remove("dragging");
+        document.body.onmousemove = () => {}
+        document.body.onmouseup = () => {}
+        setTimeout(() => {
+          isDraggingViewport = false;
+        }, 10)
+        
+      }
+
     }
 
-    // Set active row
+    
+    
 
-    Array.from($caseFacetsTableBody.querySelectorAll("tr")).forEach(tr => {
-      const valueTd = $("td:last-child", tr);
-      const buttonSet = document.createElement("button");
-
-      valueTd.innerHTML = null;
-
-      if (tr.dataset.facet == facet.id) {
-        tr.classList.add("active");
-        valueTd.appendChild(buttonSet);
-        buttonSet.disabled = true;
-        buttonSet.innerText = "In progress";
-      } else {
-        tr.classList.remove("active");
-
-        const rowFacet = currentCase.facets.find(f => f.id == tr.dataset.facet);
-
-        if (rowFacet && rowFacet.value != null) {
-          valueTd.innerText = rowFacet.value;
-        } else {
-          valueTd.appendChild(buttonSet);
-          buttonSet.innerText = "Set";
-          buttonSet.onclick = function(facetId) {
-            currentFacetId = facetId;
-            renderFacet(isLastFacet);
-          }.bind(null, tr.dataset.facet);
-        }
-      }
-    });
-  };
-
-  const saveFacet = (facetId, optionValue) => {
-    // Patch
-    fetch("/save-facet", {
-      method: "PATCH", // or 'PUT'
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(optionValue)
-    })
-      .then(t => t.json())
-      .then(savedCase => {
-        currentCase = savedCase;
-
-        // Get the next facet
-        const remainingFacets = currentCase.facets.filter(f => !f.value);
-        if (remainingFacets.length > 0) {
-          currentFacetId = remainingFacets[0].id;
-        }
-        if (remainingFacets.length === 1) {
-          isLastFacet = true;
-        }
-
-        renderCase();
-      });
-  };
-
-  const renderCase = () => {
     $caseFacetsTableBody.innerHTML = null;
-
-    if (!currentFacetId) {
-      currentFacetId = currentCase.facets[0].id;
-    }
 
     currentCase.facets.forEach((facet, i) => {
       const tr = document.createElement("tr");
@@ -279,32 +203,252 @@ window.onload = () => {
       const valueTd = document.createElement("td");
 
       tr.dataset.facet = facet.id;
-      facetTd.innerText = facet.name;
+      facetTd.innerHTML = facet.name;
 
       tr.appendChild(facetTd);
       tr.appendChild(valueTd);
       $caseFacetsTableBody.appendChild(tr);
     });
 
-    renderFacet(isLastFacet);
+    loadFacet(findNextFacet());
+
+    document.querySelector(".loading").classList.remove("loading");
+
+};
+
+window.onresize = () => {
+  if(viewportNavigator) {
+    viewportNavigator.style.height = (pdfViewer.getClientRects()[0].height * MINIMAP_SCALE) + "px";
+  }
+}
+
+const findNextFacet = () => {
+  return currentCase.facets.find(f => f.value == null).id;
+}
+
+const loadFacet = facetId => {
+  
+  const facet = currentCase.facets.find(f => f.id == facetId);
+
+  let currentSelectedPos = -1;
+  dateSubmit.innerHTML = "";
+
+  if(facet.type == "boolean") {
+    facetBooleanHeadingDetails.style.display = "block";
+    facetDateHeading.style.display = "none";
+    facetBooleanHeading.innerText = facet.name;
+    facetBooleanDescription.innerText = facet.description;
+  } else {
+    facetBooleanHeadingDetails.style.display = "none";
+    facetDateHeading.style.display = "block";
+    facetDateHeading.innerText = facet.name;
+  }
+
+  submitBooleanNo.onclick = async () => {
+    saveFacet(facetId, false);
   };
 
-  const loadCase = caseId => {
-    fetch("/case")
-      .then(t => t.json())
-      .then(t => {
-        document.querySelector(".loading").classList.remove("loading");
-        currentCase = t;
-        renderCase();
-      });
+  submitBooleanYes.onclick = async () => {
+    saveFacet(facetId, true);
   };
+
+  dateSubmitButton.onclick = async () => {
+    saveFacet(facetId, dateSubmit.value);
+  }
+
+  saveFacet = async (facetId, facetValue) => {
+    const json = await fetch(`/cases/${currentCase.caseMeta.id}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        facetId,
+        facetValue,
+        type: facet.type
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }).then(r => r.json());
+
+    //$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
+
+    facet.value = facet.type == "date" ? new Date(facetValue).toISOString() : facetValue;
+
+    loadFacet(findNextFacet());
+
+  }
+
+  Array.from($(".pdfDivPoint") || []).forEach(p => p.remove())
+
+  const pages = facetBoundingBoxes[facetId];
+
+  const processPages = (el, pages, scale) => {
+
+    const els = [];
+
+    pages.forEach((page, pageI) => {
+
+      const offset = (Math.floor(pdfState.pageHeight) * scale) * pageI;
+      
+      page.forEach(p => {
+  
+        const pdfDivPoint = document.createElement("div");
+        pdfDivPoint.classList.add('pdfDivPoint');
+        pdfDivPoint.style.position = "absolute";
+        pdfDivPoint.style.left = (p.boxes[0] * scale) + "px";
+        pdfDivPoint.style.top = (offset + (p.boxes[1] * scale)) + "px";
+        pdfDivPoint.style.width = ((p.boxes[2] - p.boxes[0]) * scale) + "px";
+        pdfDivPoint.style.height = ((p.boxes[5] - p.boxes[1]) * scale) + "px";
+        
+        if(p.optionValue) {
+          pdfDivPoint.dataset.option = p.optionValue;
+        }
+        
+        els.push(pdfDivPoint)
+        el.appendChild(pdfDivPoint)
+  
+      });
+  
+    });
+
+    return els;
+
+  }
+
+  const pdfViewEls = processPages(pdfViewer, pages, 1.0);
+
+  pdfViewEls.forEach(el => {
+    
+    if(el.dataset.option) {
+
+      const button = document.createElement('button');
+      button.onclick = saveFacet.bind(null, facetId, el.dataset.option);
+      button.innerHTML = `Set facet as <strong>${el.dataset.option}</strong>`;
+      const span = document.createElement('span');
+      span.appendChild(button);
+      el.appendChild(span);
+      el.classList.add("hoverable");
+    }
+    el.style.boxSizing = `content-box`;
+    el.style.paddingBottom = "2px";
+    el.style.borderBottom = `2px solid red`;
+  });
+  
+  const pdfMinimapEls = processPages(pdfMinimapInner, pages, MINIMAP_SCALE);
+
+  pdfMinimapEls.forEach(el => {
+    el.style.backgroundColor = `red`;
+  })
+
+  if(facet.type === "boolean") {
+    submitBoolean.style.display = "block";
+    submitDate.style.display = "none";
+  } else {
+    submitBoolean.style.display = "none";
+    submitDate.style.display = "block";
+    const dateOptions = [...new Set(pdfViewEls.map(el => el.dataset.option))];
+    dateOptions.forEach(d => {
+      let option = document.createElement('option');
+        option.value = d;
+        option.text = d;
+        dateSubmit.appendChild(option)
+    })
+  }
+
+  Array.from($caseFacetsTableBody.querySelectorAll("tr")).forEach(tr => {
+    const valueTd = $("td:last-child", tr);
+    const buttonSet = document.createElement("button");
+
+    valueTd.innerHTML = null;
+
+    if (tr.dataset.facet == facetId) {
+      tr.classList.add("active");
+      valueTd.appendChild(buttonSet);
+      buttonSet.disabled = true;
+      buttonSet.innerText = "In progress";
+    } else {
+      tr.classList.remove("active");
+
+      const rowFacet = currentCase.facets.find(f => f.id == tr.dataset.facet);
+      
+      if (rowFacet && rowFacet.value != null) {
+        if(rowFacet.type == "date") {
+          const rowDate = new Date(rowFacet.value);
+          valueTd.innerText = rowDate.getDate() + "-" + (rowDate.getMonth() + 1) + "-" + rowDate.getFullYear();
+
+        } else {
+          valueTd.innerText = rowFacet.value === true ? "✔" : "✘";
+        }
+      } else {
+        valueTd.appendChild(buttonSet);
+        buttonSet.innerText = "Select";
+        buttonSet.onclick = loadFacet.bind(null, tr.dataset.facet);
+      }
+    }
+  });
+
+  const goToPoint = (index) => {
+      
+    const newPos = pdfViewEls[index].offsetTop;
+    pdfViewer.scrollTop = newPos - 10;
+    currentSelectedPos = index;
+
+  }
+  
+  pdfPrev.onclick = () => {
+    if(currentSelectedPos === 0) {
+      return;
+    }
+    goToPoint(currentSelectedPos - 1);
+  }
+
+  pdfNext.onclick = () => {
+    if(currentSelectedPos === pdfViewEls.length - 1) {
+      return;
+    }
+    goToPoint(currentSelectedPos + 1);
+  }
+
+  //goToPoint(currentSelectedPos);
+  pdfViewer.scrollTop = 0;
+
+
+};
+
+
+window.onload = async () => {
+  
+  $caseFacetsTableBody = $("#case-facets tbody");
+  $facetSelection = $("main");
+  
+  const cases = await fetch("/cases").then(c => c.json());
 
   const searchParams = new URLSearchParams(window.location.search);
-  const caseId = searchParams.get("caseId");
+  let caseId = searchParams.get("caseId");
 
-  if (caseId) {
-    loadCase(caseId);
-  } else {
-    alert("No case id");
+  if (!caseId) {
+    caseId = cases[0].id;
+    history.pushState(null, null,`?caseId=${caseId}`)
   }
+
+  await loadCase(caseId);
+
+  $casesTableBody = $("#casesList tbody");
+
+  cases.forEach(c => {
+
+    const tr = document.createElement("tr");
+    if(caseId == c.id) {
+      tr.classList.add("active")
+    }
+    $casesTableBody.appendChild(tr);
+    const caseNameTd = document.createElement("td");
+    caseNameTd.innerHTML = `<a href="?caseId=${c.id}">${c.case_name}</a>`;
+    tr.appendChild(caseNameTd);
+    const processedCountTd = document.createElement("td");
+    processedCountTd.innerText = 0;
+    tr.appendChild(processedCountTd);
+
+  })
+
+  
 };

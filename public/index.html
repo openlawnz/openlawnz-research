@@ -6,26 +6,73 @@
     <title></title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="index.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js"></script>
     <script src="index.js"></script>
   </head>
-  <body class="loading">
+  <body>
     <header>
       <img src="logo.svg" alt="OpenLaw NZ Logo" />
       <h1>Human Refinement Centre</h1>
     </header>
-    <div id="wrap">
+    <div id="wrap" class="loading">
       <nav>
-        <h2>Cases</h2>
-        <div>
-          <ul>
-            <li><a href="#casename">Case Name</a> (0)</li>
-            <li><a href="#casename">Case Name</a> (0)</li>
-            <li><a href="#casename">Case Name</a> (0)</li>
-            <li><a href="#casename">Case Name</a> (0)</li>
-          </ul>
+        <div id="casesList">
+          <!-- <input type="search" placeholder="filter" /> -->
+          <div id="caseListTable">
+            <table>
+              <thead>
+                <tr>
+                  <th>Case name</th>
+                  <th>Process #</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </nav>
-      <main></main>
+      <main>
+        <details id="facetBooleanHeadingDetails">
+          <summary id="facetBooleanHeading"></summary>
+          <p id="facetBooleanDescription"></p>
+        </details>
+
+        <p id="facetDateHeading"></p>
+        
+        <div id="pdf">
+          <div id="pdfViewerOuter">
+            <div id="pdfViewer"></div>
+          </div>
+
+          <div id="pdfMinimap">
+            <div>
+              <div id="saveHeading">
+                Save facet as
+              </div>
+              <div id="submitDate">
+                <div>
+                  <select id="dateSubmit"> </select>
+                  <button id="dateSubmitButton">Submit</button>
+                </div>
+              </div>
+
+              <div id="submitBoolean">
+                <button id="submitBooleanYes">✔ Yes</button>
+                <button id="submitBooleanNo">✘ No</button>
+              </div>
+            </div>
+
+            <button id="pdfPrev">Prev match ⬆</button>
+
+            <div id="pdfMinimapOuter">
+              <div id="pdfMinimapInner"></div>
+            </div>
+
+            <button id="pdfNext">Next match ⬇</button>
+          </div>
+        </div>
+      </main>
 
       <div id="case-facets">
         <table>
@@ -41,74 +88,3 @@
     </div>
   </body>
 </html>
-
-<template id="date-facet-template">
-  <div class="facet-control date-facet-control">
-    <h2>Case Name <span></span></h2>
-    <details>
-      <summary>Facet type: Date</summary>
-      Description
-    </details>
-    <div class="facet-content">
-      <div class="date-carousel">
-        <div class="facet-heading">
-          <div class="facet-heading-left">
-            <h3>Search results</h3>
-            <div class="carousel-pagination"></div>
-          </div>
-          <div class="facet-accept-buttons">
-            <button type="button" class="button facet-accept-button"></button>
-          </div>
-        </div>
-        <div class="carousel">
-          <div class="carousel-main">
-            <button class="carousel-prev">←</button>
-            <div class="carousel-content">
-              <p></p>
-            </div>
-            <button class="carousel-next">→</button>
-          </div>
-        </div>
-        <div class="current-option-value"></div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<template id="boolean-facet-template">
-  <div class="facet-control boolean-facet-control">
-    <h2>Case Name <span></span></h2>
-    <details>
-      <summary>Facet type: Boolean</summary>
-      Description
-    </details>
-    <div class="facet-content">
-      <div class="boolean-carousel">
-        <div class="facet-heading">
-          <div class="facet-heading-left">
-            <h3>Search results</h3>
-            <div class="carousel-pagination"></div>
-          </div>
-          <div class="facet-accept-buttons">
-            <span>Overall</span>
-            <button type="button" data-value="Yes" class="button">✓ Yes</button>
-            <button type="button" cdata-value="No" class="button">x No</button>
-          </div>
-        </div>
-        <div class="carousel">
-          <div class="carousel-main">
-            <div class="carousel-content">
-              <p></p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <h3>Passage is relevant as:</h3>
-      <div class="facet-value-buttons">
-        <button type="button" data-value="Yes" class="button">Positive</button>
-        <button type="button" data-value="N/A" class="button">Not relevant</button>
-        <button type="button" data-value="No" class="button">Negative</button>
-      </div>
-    </div>
-  </div>
-</template>

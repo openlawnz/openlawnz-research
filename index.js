@@ -1,103 +1,178 @@
-const express = require('express')
-const app = express()
-const port = 8082
+const express = require("express");
+const app = express();
+const port = 8082;
+const basicAuth = require('express-basic-auth');
+const bodyParser = require('body-parser');
+const uuidv4 = require("uuid").v4;
 
-app.use(express.static('public'))
-/*
-let sampleData = {
-    "facets": [{
-        "id": 1,
-        "name": "Date of Injury",
-        "value": "abc",
-        "type": "date",
-        "options": [{
-            "text": "test abc test",
-            "highlight": "abc"
-        }, {
-            "text": "test2 abc test",
-            "highlight": "abc"
-        }, {
-            "text": "test3 abc test",
-            "highlight": "abc"
-        }]
-    }, {
-        "id": 2,
-        "name": "Date2 of Injury 2",
-        "value": null,
-        "type": "date",
-        "options": [{
-            "text": "testgggg abc test",
-            "highlight": "abc"
-        }, {
-            "text": "test2 abc test",
-            "highlight": "abc"
-        }]
-    }]    
-};
-*/
-
-let sampleData = {
-  "facets": [
-    {
-      "id": 2,
-      "name": "Has sufficient evidence",
-      "value": null,
-      "type": "boolean",
-      "options": [
-        {
-          "id": 0,
-          "text": "testgggg abc test",
-          "highlight": "abc"
-        },
-        {
-          "id": 1,
-          "text": "test2 abc test",
-          "highlight": "abc"
-        }
-      ]
-    },
-    {
-      "id": 1,
-      "name": "Date of Injury",
-      "value": null,
-      "type": "date",
-      "options": [
-        {
-          "text": "test abc test",
-          "highlight": "abc"
-        },
-        {
-          "text": "test2 abc2 test",
-          "highlight": "abc2"
-        },
-        {
-          "text": "test3 abc3 test",
-          "highlight": "abc3"
-        }
-      ]
-    },
-    {
-      "id": 3,
-      "name": "Has sufficient evidence",
-      "value": null,
-      "type": "boolean",
-      "options": [
-        {
-          "text": "testgggg abc test",
-          "highlight": "abc"
-        },
-        {
-          "text": "test2 abc test",
-          "highlight": "abc"
-        }
-      ]
-    }
-  ]
+if(!process.env.USERS) {
+  console.log("No users specified")
+  return;
 }
+app.use(basicAuth({
+  users: JSON.parse(process.env.USERS),
+  challenge: true
+}))
 
+const { Client } = require("pg");
 
-app.get('/case', (req, res) => res.json(sampleData))
+const client = new Client({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.PORT,
+});
+client.connect();
 
-app.patch('/save-facet', (req, res) => res.json(sampleData))
+app.use(bodyParser.json());
+app.use(express.static("public"));
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.get("/cases", async (req, res) => {
+
+  const result = await client.query(`
+    SELECT main.cases.case_name, main.cases.id 
+    FROM main.cases
+    INNER JOIN main.category_to_cases ON main.cases.id = main.category_to_cases.case_id
+    WHERE main.category_to_cases.category_id = 'acc'`);
+    
+    res.json(result.rows);
+
+});
+
+app.get("/cases/:caseId", async (req, res) => {
+
+  const caseId = req.params.caseId;
+
+  const underscore = caseId.split("_")[2];
+  const accsplit = underscore.split("NZACC");
+
+  const pdfURLID = accsplit[1].split(".pdf")[0] + "-" + accsplit[0] + ".pdf.json";
+
+  const [allFacets, userValues] = await Promise.all([
+    client.query(`
+      SELECT 
+        funnel.facets.id AS facet_id, 
+        funnel.facets.type, 
+        funnel.facets.description,
+        funnel.facets.name,
+        funnel.facet_boolean_keywords.id AS option_id,
+        funnel.facet_boolean_keywords.whole_word,
+        funnel.facet_boolean_keywords.value
+      FROM funnel.facets
+      LEFT JOIN funnel.facet_boolean_keywords 
+      ON funnel.facets.id = funnel.facet_boolean_keywords.facet_id`),
+
+    client.query(`
+      SELECT 
+      b.value AS boolean_value, 
+      meta.facet_id AS facet_id,
+      d.value AS date_value
+      FROM funnel.facet_value_metadata AS meta
+      LEFT JOIN funnel.boolean_facet_values AS b
+        ON b.metadata_id = meta.id
+      LEFT JOIN funnel.date_facet_values AS d
+        ON d.metadata_id = meta.id
+      WHERE meta.case_id = $1`, [caseId]),
+  ]);
+
+  let response = {
+    caseMeta: {
+      id: caseId,
+      pdfJSON: `${process.env.PDF_JSON_BASE_PATH}${pdfURLID}`,
+      pdfURL: `${process.env.PDF_BASE_PATH}${caseId}`,
+    }
+  };
+
+  let facets = {};
+
+  allFacets.rows.forEach((r) => {
+    
+    if (!facets[r.facet_id]) {
+      let value = null;
+      let userValueResult = userValues.rows.find((f) => f.facet_id == r.facet_id);
+      if (userValueResult) {
+        value = r.type === "boolean" ? userValueResult.boolean_value : userValueResult.date_value;
+      }
+      facets[r.facet_id] = {
+        id: r.facet_id,
+        name: r.name,
+        type: r.type,
+        value,
+        ...(r.type === "boolean" ? {
+          description: r.description,
+          options: []
+        } : null)
+      };
+    }
+
+    if(r.type === "boolean") {
+      facets[r.facet_id].options.push({
+        id: r.id,
+        value: r.value,
+        wholeWord: r.whole_word,
+      });
+    }
+  });
+
+  response.facets = Object.values(facets);
+
+  res.json(response);
+});
+
+app.post("/cases/:caseId", async (req, res) => {
+  const caseId = req.params.caseId;
+  const metadataId = uuidv4();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(`
+        INSERT INTO funnel.facet_value_metadata
+        (
+          id, 
+          facet_id, 
+          user_id, 
+          date_recorded, 
+          case_id
+        ) VALUES ($1, $2, $3, $4, $5)`, 
+      [
+        metadataId,
+        req.body.facetId,
+        req.auth.user,
+        new Date().toISOString(),
+        caseId
+      ]);
+
+    if(req.body.type == "boolean" || req.body.type == "date") {
+      
+      await client.query(`
+        INSERT INTO ${req.body.type == "boolean" ? "funnel.boolean_facet_values" : "funnel.date_facet_values"}
+        (
+          id, 
+          metadata_id, 
+          value
+        ) VALUES ($1, $2, $3)`, 
+      [
+        uuidv4(),
+        metadataId,
+        req.body.facetValue
+      ]);
+
+    } else {
+      throw new Error("Invalid type")
+    }
+
+    await client.query('COMMIT');
+  } catch(ex) {
+    
+    await client.query('ROLLBACK');
+    console.log(ex);
+  }
+
+  res.json({});
+
+});
+
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+});
