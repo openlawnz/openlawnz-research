@@ -2,12 +2,15 @@ onmessage = function (e) {
 
   const dateRegex = /(((31(?!\ (Feb(ruary)?|Apr(il)?|June?|(Sep(?=\b|t)t?|Nov)(ember)?)))|((30|29)(?!\ Feb(ruary)?))|(29(?=\ Feb(ruary)?\ (((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00)))))|(0?[1-9])|1\d|2[0-8])\ (Jan(uary)?|Feb(ruary)?|Ma(r(ch)?|y)|Apr(il)?|Ju((ly?)|(ne?))|Aug(ust)?|Oct(ober)?|(Sep(?=\b|t)t?|Nov|Dec)(ember)?),?\s((1[6-9]|[2-9]\d)\d{2}))/gmi;
 
-  const textExists = (text, findText) => {
-    return text.toLowerCase().indexOf(findText.toLowerCase()) !== -1;
-  };
-
-  const isDate = (word) => {
-    return new Date(word) !== "Invalid Date" && !isNaN(new Date(word));
+  const textExists = (text, findText, loose, wholeWord) => {
+    if(loose) {
+      return text.toLowerCase().indexOf(findText.toLowerCase()) !== -1;
+    } else if (!wholeWord) {
+      return text.toLowerCase().startsWith(findText.toLowerCase());
+    } else {
+      return text.toLowerCase().trim() === findText.toLowerCase().trim();
+    }
+    
   };
 
   const { facetData, caseData } = JSON.parse(e.data);
@@ -23,9 +26,9 @@ onmessage = function (e) {
         // If it does, look in the words
 
         facetData.options.forEach((f) => {
-          if (textExists(l.text, f.value)) {
+          if (textExists(l.text, f.value, true)) {
             l.words.forEach((w) => {
-              if (textExists(w.text, f.value)) {
+              if (textExists(w.text, f.value, false, f.wholeWord)) {
                 currentPage.push({
                   boxes: w.boundingBox.map((b) => b * 72)
                 });
