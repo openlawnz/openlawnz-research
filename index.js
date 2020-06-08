@@ -74,12 +74,13 @@ app.get("/cases/:caseId", async (req, res) => {
         funnel.facet_boolean_keywords.value,
         (
           SELECT COUNT(*) FROM 
-          funnel.facet_value_metadata WHERE 
-          funnel.facet_value_metadata.facet_id = funnel.facets.id
+          funnel.facet_value_metadata
+          WHERE funnel.facet_value_metadata.facet_id = funnel.facets.id
+          AND funnel.facet_value_metadata.case_id = $1
         ) AS completed_count
       FROM funnel.facets
       LEFT JOIN funnel.facet_boolean_keywords 
-      ON funnel.facets.id = funnel.facet_boolean_keywords.facet_id`),
+      ON funnel.facets.id = funnel.facet_boolean_keywords.facet_id`, [caseId]),
 
     client.query(`
       SELECT 
