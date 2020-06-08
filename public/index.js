@@ -201,16 +201,25 @@ const loadCase = async caseId => {
       const tr = document.createElement("tr");
       const facetTd = document.createElement("td");
       const valueTd = document.createElement("td");
+      const completedTd = document.createElement("td");
 
       tr.dataset.facet = facet.id;
       facetTd.innerHTML = facet.name;
+      completedTd.innerHTML = facet.completedCount;
 
       tr.appendChild(facetTd);
       tr.appendChild(valueTd);
+      tr.appendChild(completedTd);
       $caseFacetsTableBody.appendChild(tr);
     });
 
-    loadFacet(findNextFacet());
+    const nextFacetId = findNextFacet();
+
+    if(nextFacetId) {
+      loadFacet(nextFacetId);
+    } else {
+      refreshFacetTable()
+    }
 
     document.querySelector(".loading").classList.remove("loading");
 
@@ -223,7 +232,49 @@ window.onresize = () => {
 }
 
 const findNextFacet = () => {
-  return currentCase.facets.find(f => f.value == null).id;
+  const nextFacet = currentCase.facets.find(f => f.value == null);
+  return nextFacet ? nextFacet.id : null;
+}
+
+const refreshFacetTable = facetId => {
+  if(!facetId) {
+    saveWrap.style.display = "none";
+    facetHeadingWrap.style.display = "none";
+  } else {
+    saveWrap.style.display = "block";
+    facetHeadingWrap.style.display = "block";
+  }
+  Array.from($caseFacetsTableBody.querySelectorAll("tr")).forEach(tr => {
+    const rowFacet = currentCase.facets.find(f => f.id == tr.dataset.facet);
+
+    const valueTd = $("td:nth-child(2)", tr);
+    const completedTd = $("td:nth-child(3)", tr);
+    const buttonSet = document.createElement("button");
+
+    valueTd.innerHTML = null;
+    completedTd.innerHTML = rowFacet.completedCount;
+
+    if (tr.dataset.facet == facetId) {
+      tr.classList.add("active");
+      valueTd.appendChild(buttonSet);
+      buttonSet.disabled = true;
+      buttonSet.innerText = "In progress";
+    } else {
+      tr.classList.remove("active");
+      if (rowFacet && rowFacet.value != null) {
+        if(rowFacet.type == "date") {
+          const rowDate = new Date(rowFacet.value);
+          valueTd.innerText = rowDate.getDate() + "-" + (rowDate.getMonth() + 1) + "-" + rowDate.getFullYear();
+        } else {
+          valueTd.innerText = rowFacet.value === true ? "✔" : "✘";
+        }
+      } else {
+        valueTd.appendChild(buttonSet);
+        buttonSet.innerText = "Select";
+        buttonSet.onclick = loadFacet.bind(null, tr.dataset.facet);
+      }
+    }
+  });
 }
 
 const loadFacet = facetId => {
@@ -272,8 +323,14 @@ const loadFacet = facetId => {
     //$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
 
     facet.value = facet.type == "date" ? new Date(facetValue).toISOString() : facetValue;
+    facet.completedCount = parseInt(facet.completedCount) + 1;
+    const nextFacetId = findNextFacet();
 
-    loadFacet(findNextFacet());
+    if(nextFacetId) {
+      loadFacet(nextFacetId);
+    } else {
+      refreshFacetTable()
+    }
 
   }
 
@@ -354,37 +411,7 @@ const loadFacet = facetId => {
     })
   }
 
-  Array.from($caseFacetsTableBody.querySelectorAll("tr")).forEach(tr => {
-    const valueTd = $("td:last-child", tr);
-    const buttonSet = document.createElement("button");
-
-    valueTd.innerHTML = null;
-
-    if (tr.dataset.facet == facetId) {
-      tr.classList.add("active");
-      valueTd.appendChild(buttonSet);
-      buttonSet.disabled = true;
-      buttonSet.innerText = "In progress";
-    } else {
-      tr.classList.remove("active");
-
-      const rowFacet = currentCase.facets.find(f => f.id == tr.dataset.facet);
-      
-      if (rowFacet && rowFacet.value != null) {
-        if(rowFacet.type == "date") {
-          const rowDate = new Date(rowFacet.value);
-          valueTd.innerText = rowDate.getDate() + "-" + (rowDate.getMonth() + 1) + "-" + rowDate.getFullYear();
-
-        } else {
-          valueTd.innerText = rowFacet.value === true ? "✔" : "✘";
-        }
-      } else {
-        valueTd.appendChild(buttonSet);
-        buttonSet.innerText = "Select";
-        buttonSet.onclick = loadFacet.bind(null, tr.dataset.facet);
-      }
-    }
-  });
+  refreshFacetTable(facetId)
 
   const goToPoint = (index) => {
       

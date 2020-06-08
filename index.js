@@ -21,7 +21,7 @@ const client = new Client({
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
-  port: process.env.PORT,
+  port: process.env.DB_PORT,
 });
 client.connect();
 
@@ -31,7 +31,9 @@ app.use(express.static("public"));
 app.get("/cases", async (req, res) => {
 
   const result = await client.query(`
-    SELECT main.cases.case_name, main.cases.id 
+    SELECT 
+      main.cases.case_name,
+      main.cases.id
     FROM main.cases
     INNER JOIN main.category_to_cases ON main.cases.id = main.category_to_cases.case_id
     WHERE main.category_to_cases.category_id = 'acc'`);
@@ -58,7 +60,12 @@ app.get("/cases/:caseId", async (req, res) => {
         funnel.facets.name,
         funnel.facet_boolean_keywords.id AS option_id,
         funnel.facet_boolean_keywords.whole_word,
-        funnel.facet_boolean_keywords.value
+        funnel.facet_boolean_keywords.value,
+        (
+          SELECT COUNT(*) FROM 
+          funnel.facet_value_metadata WHERE 
+          funnel.facet_value_metadata.facet_id = funnel.facets.id
+        ) AS completed_count
       FROM funnel.facets
       LEFT JOIN funnel.facet_boolean_keywords 
       ON funnel.facets.id = funnel.facet_boolean_keywords.facet_id`),
@@ -73,7 +80,8 @@ app.get("/cases/:caseId", async (req, res) => {
         ON b.metadata_id = meta.id
       LEFT JOIN funnel.date_facet_values AS d
         ON d.metadata_id = meta.id
-      WHERE meta.case_id = $1`, [caseId]),
+      WHERE meta.case_id = $1
+      AND meta.user_id = $2`, [caseId, req.auth.user]),
   ]);
 
   let response = {
@@ -98,6 +106,7 @@ app.get("/cases/:caseId", async (req, res) => {
         id: r.facet_id,
         name: r.name,
         type: r.type,
+        completedCount: r.completed_count,
         value,
         ...(r.type === "boolean" ? {
           description: r.description,

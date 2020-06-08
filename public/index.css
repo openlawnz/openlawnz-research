@@ -167,7 +167,7 @@ main h2 span {
   color: #fff;
 }
 
-#case-facets tr td:last-child {
+#case-facets tr td:not(:first-child) {
   text-align: center;
 }
 
