@@ -472,7 +472,7 @@ window.onload = async () => {
     caseNameTd.innerHTML = `<a href="?caseId=${c.id}">${c.case_name}</a>`;
     tr.appendChild(caseNameTd);
     const processedCountTd = document.createElement("td");
-    processedCountTd.innerText = 0;
+    processedCountTd.innerText = c.processed_count;
     tr.appendChild(processedCountTd);
 
   })

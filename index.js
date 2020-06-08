@@ -32,11 +32,22 @@ app.get("/cases", async (req, res) => {
 
   const result = await client.query(`
     SELECT 
-      main.cases.case_name,
-      main.cases.id
-    FROM main.cases
-    INNER JOIN main.category_to_cases ON main.cases.id = main.category_to_cases.case_id
-    WHERE main.category_to_cases.category_id = 'acc'`);
+    main.cases.case_name,
+    main.cases.id,
+    (
+      FLOOR ((
+        SELECT COUNT(*)
+        FROM funnel.facet_value_metadata
+        WHERE main.cases.id = funnel.facet_value_metadata.case_id
+      ) / (
+        SELECT 
+          COUNT(*) 
+          FROM funnel.facets
+      )) 
+    ) AS processed_count
+  FROM main.cases
+  INNER JOIN main.category_to_cases ON main.cases.id = main.category_to_cases.case_id
+  WHERE main.category_to_cases.category_id = 'acc'`);
     
     res.json(result.rows);
 
