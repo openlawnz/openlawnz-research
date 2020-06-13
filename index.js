@@ -85,17 +85,23 @@ app.get("/cases/:caseId", async (req, res) => {
     client.query(`
       SELECT 
       b.value AS boolean_value, 
+      b.not_applicable AS boolean_not_applicable, 
       meta.facet_id AS facet_id,
-      d.value AS date_value
+      d.date_day AS date_day,
+      d.date_month AS date_month,
+      d.date_year AS date_year,
+      d.not_applicable AS date_not_applicable
       FROM funnel.facet_value_metadata AS meta
       LEFT JOIN funnel.boolean_facet_values AS b
         ON b.metadata_id = meta.id
       LEFT JOIN funnel.date_facet_values AS d
         ON d.metadata_id = meta.id
       WHERE meta.case_id = $1
-      AND meta.user_id = $2`, [caseId, req.auth.user]),
+      AND meta.user_id = $2
+      ORDER BY meta.date_recorded DESC`, [caseId, req.auth.user]),
   ]);
 
+ 
   let response = {
     caseMeta: {
       id: caseId,
@@ -105,27 +111,31 @@ app.get("/cases/:caseId", async (req, res) => {
   };
 
   let facets = {};
-
+  
   allFacets.rows.forEach((r) => {
     
     if (!facets[r.facet_id]) {
       let value = null;
       let userValueResult = userValues.rows.find((f) => f.facet_id == r.facet_id);
       if (userValueResult) {
-        value = r.type === "boolean" ? userValueResult.boolean_value : userValueResult.date_value;
+        value = r.type === "boolean" ? userValueResult.boolean_value : (userValueResult.date_day || userValueResult.date_month || userValueResult.date_year) ? [userValueResult.date_day, userValueResult.date_month, userValueResult.date_year] : null;
       }
+
       facets[r.facet_id] = {
         id: r.facet_id,
         name: r.name,
         type: r.type,
         completedCount: r.completed_count,
         value,
+        not_applicable: userValueResult ? r.type === "boolean" ? userValueResult.boolean_not_applicable : userValueResult.date_not_applicable : null,
         ...(r.type === "boolean" ? {
           description: r.description,
           options: []
         } : null)
       };
     }
+
+
 
     if(r.type === "boolean") {
       facets[r.facet_id].options.push({
@@ -164,19 +174,44 @@ app.post("/cases/:caseId", async (req, res) => {
         caseId
       ]);
 
-    if(req.body.type == "boolean" || req.body.type == "date") {
-      
+    if(req.body.type == "boolean") {
+
+
+
       await client.query(`
-        INSERT INTO ${req.body.type == "boolean" ? "funnel.boolean_facet_values" : "funnel.date_facet_values"}
+        INSERT INTO funnel.boolean_facet_values
         (
           id, 
           metadata_id, 
-          value
-        ) VALUES ($1, $2, $3)`, 
+          value,
+          not_applicable
+        ) VALUES ($1, $2, $3, $4)`, 
       [
         uuidv4(),
         metadataId,
-        req.body.facetValue
+        req.body.facetValue,
+        req.body.not_applicable
+      ]);
+
+    } else if(req.body.type == "date") {
+      
+      await client.query(`
+        INSERT INTO funnel.date_facet_values
+        (
+          id, 
+          metadata_id, 
+          date_day,
+          date_month,
+          date_year,
+          not_applicable
+        ) VALUES ($1, $2, $3, $4, $5, $6)`, 
+      [
+        uuidv4(),
+        metadataId,
+        req.body.facetValue[0] ? req.body.facetValue[0] : null,
+        req.body.facetValue[1] ? req.body.facetValue[1] : null,
+        req.body.facetValue[2] ? req.body.facetValue[2] : null,
+        req.body.not_applicable
       ]);
 
     } else {

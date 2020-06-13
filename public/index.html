@@ -32,7 +32,7 @@
           </div>
         </div>
       </nav>
-      <main>
+      <main id="main">
         <div id="facetHeadingWrap">
           <details id="facetBooleanHeadingDetails">
             <summary id="facetBooleanHeading"></summary>
@@ -40,9 +40,20 @@
           </details>
 
           <p id="facetDateHeading"></p>
+
         </div>
         <div id="pdf">
           <div id="pdfViewerOuter">
+            <div id="pdfSearchBar">
+              <button id="pdfSearchBarToggle">🔍</button>
+              <div>
+                <input type="search" placeholder="Search case" id="search-case" />
+              </div>
+              <div id="pdfSearchNavigation">
+                <button id="pdfSearchPrev">⬆</button>
+                <button id="pdfSearchNext">⬇</button>
+              </div>
+            </div>
             <div id="pdfViewer"></div>
           </div>
 
@@ -54,23 +65,42 @@
               <div id="submitDate">
                 <div>
                   <select id="dateSubmit"> </select>
+
+                  <div id="dateSeparated">
+                    <div>
+                      <label>Day</label>
+                      <input type="number" id="dateDay" placeholder="DD" />
+                    </div>
+                    <div>
+                      <label>Month</label>
+                      <input type="number" id="dateMonth" placeholder="MM" />
+                    </div>
+                    <div>
+                      <label>Year</label>
+                      <input type="number" id="dateYear" placeholder="YYYY" />
+                    </div>
+                  </div>
+
                   <button id="dateSubmitButton">Submit</button>
+                  <button id="dateNAButton">N/A</button>
                 </div>
               </div>
 
               <div id="submitBoolean">
                 <button id="submitBooleanYes">✔ Yes</button>
                 <button id="submitBooleanNo">✘ No</button>
+                <button id="submitBooleanNA">N/A</button>
               </div>
             </div>
-
-            <button id="pdfPrev">Prev match ⬆</button>
-
+          <div id="pdfNavigation">
+            <button id="pdfPrev">⬆</button>
+            <button id="pdfNext">⬇</button>
+          </div>
             <div id="pdfMinimapOuter">
               <div id="pdfMinimapInner"></div>
             </div>
 
-            <button id="pdfNext">Next match ⬇</button>
+            
           </div>
         </div>
       </main>
@@ -81,6 +111,7 @@
             <tr>
               <th>Facet</th>
               <th>Value</th>
+              <th>Action</th>
               <th><span title="Completed count">#</span></th>
             </tr>
           </thead>
