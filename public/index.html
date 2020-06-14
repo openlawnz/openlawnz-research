@@ -1,123 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="index.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js"></script>
-    <script src="index.js"></script>
-  </head>
-  <body>
-    <header>
-      <img src="logo.svg" alt="OpenLaw NZ Logo" />
-      <h1>Human Refinement Centre</h1>
-    </header>
-    <div id="wrap" class="loading">
-      <nav>
-        <div id="casesList">
-          <!-- <input type="search" placeholder="filter" /> -->
-          <div id="caseListTable">
-            <table>
-              <thead>
-                <tr>
-                  <th>Case name</th>
-                  <th><span title="Completed count">#</span></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </nav>
-      <main id="main">
-        <div id="facetHeadingWrap">
-          <details id="facetBooleanHeadingDetails">
-            <summary id="facetBooleanHeading"></summary>
-            <p id="facetBooleanDescription"></p>
-          </details>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title></title>
+		<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
+		<link rel="stylesheet" href="index.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js"></script>
+		<script src="index.js"></script>
+	</head>
+	<body>
+		<header>
+			<img src="logo.svg" alt="OpenLaw NZ Logo" />
+			<h1>Human Refinement Centre</h1>
+		</header>
+		<div id="wrap" class="loading">
+			<nav>
+				<div id="casesList">
+					<!-- <input type="search" placeholder="filter" /> -->
+					<div id="caseListTable">
+						<table>
+							<thead>
+								<tr>
+									<th>Case name</th>
+									<th><span title="Completed count">#</span></th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+				</div>
+			</nav>
+			<main id="main">
+				<div id="facetHeadingWrap">
+					<details id="facetBooleanHeadingDetails">
+						<summary id="facetBooleanHeading"></summary>
+						<p id="facetBooleanDescription"></p>
+					</details>
 
-          <p id="facetDateHeading"></p>
+					<p id="facetDateHeading"></p>
+				</div>
+				<div id="pdf">
+					<div id="pdfViewerOuter">
+						<div id="pdfSearchBar">
+							<button id="pdfSearchBarToggle">🔍</button>
+							<div>
+								<input type="search" placeholder="Search case" id="search-case" />
+							</div>
+							<div id="pdfSearchNavigation">
+								<button id="pdfSearchPrev">⬆</button>
+								<button id="pdfSearchNext">⬇</button>
+							</div>
+						</div>
+						<div id="pdfViewer"></div>
+					</div>
 
-        </div>
-        <div id="pdf">
-          <div id="pdfViewerOuter">
-            <div id="pdfSearchBar">
-              <button id="pdfSearchBarToggle">🔍</button>
-              <div>
-                <input type="search" placeholder="Search case" id="search-case" />
-              </div>
-              <div id="pdfSearchNavigation">
-                <button id="pdfSearchPrev">⬆</button>
-                <button id="pdfSearchNext">⬇</button>
-              </div>
-            </div>
-            <div id="pdfViewer"></div>
-          </div>
+					<div id="pdfMinimap">
+						<div id="saveWrap">
+							<div id="saveHeading">
+								Save facet as
+							</div>
+							<div id="submitDate">
+								<div>
+									<select id="dateSubmit"> </select>
 
-          <div id="pdfMinimap">
-            <div id="saveWrap">
-              <div id="saveHeading">
-                Save facet as
-              </div>
-              <div id="submitDate">
-                <div>
-                  <select id="dateSubmit"> </select>
+									<div id="dateSeparated">
+										<div>
+											<label>Day</label>
+											<input type="number" id="dateDay" placeholder="DD" />
+										</div>
+										<div>
+											<label>Month</label>
+											<input type="number" id="dateMonth" placeholder="MM" />
+										</div>
+										<div>
+											<label>Year</label>
+											<input type="number" id="dateYear" placeholder="YYYY" />
+										</div>
+									</div>
 
-                  <div id="dateSeparated">
-                    <div>
-                      <label>Day</label>
-                      <input type="number" id="dateDay" placeholder="DD" />
-                    </div>
-                    <div>
-                      <label>Month</label>
-                      <input type="number" id="dateMonth" placeholder="MM" />
-                    </div>
-                    <div>
-                      <label>Year</label>
-                      <input type="number" id="dateYear" placeholder="YYYY" />
-                    </div>
-                  </div>
+									<button id="dateSubmitButton">Submit</button>
+									<button id="dateNAButton">N/A</button>
+								</div>
+							</div>
 
-                  <button id="dateSubmitButton">Submit</button>
-                  <button id="dateNAButton">N/A</button>
-                </div>
-              </div>
+							<div id="submitBoolean">
+								<button id="submitBooleanYes">✔ Yes</button>
+								<button id="submitBooleanNo">✘ No</button>
+								<button id="submitBooleanNA">N/A</button>
+							</div>
+						</div>
+						<div id="pdfNavigation">
+							<button id="pdfPrev">⬆</button>
+							<button id="pdfNext">⬇</button>
+						</div>
+						<div id="pdfMinimapOuter">
+							<div id="pdfMinimapInner"></div>
+						</div>
+					</div>
+				</div>
+			</main>
 
-              <div id="submitBoolean">
-                <button id="submitBooleanYes">✔ Yes</button>
-                <button id="submitBooleanNo">✘ No</button>
-                <button id="submitBooleanNA">N/A</button>
-              </div>
-            </div>
-          <div id="pdfNavigation">
-            <button id="pdfPrev">⬆</button>
-            <button id="pdfNext">⬇</button>
-          </div>
-            <div id="pdfMinimapOuter">
-              <div id="pdfMinimapInner"></div>
-            </div>
-
-            
-          </div>
-        </div>
-      </main>
-
-      <div id="case-facets">
-        <table>
-          <thead>
-            <tr>
-              <th>Facet</th>
-              <th>Value</th>
-              <th>Action</th>
-              <th><span title="Completed count">#</span></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </body>
+			<div id="case-facets">
+				<table>
+					<thead>
+						<tr>
+							<th>Facet</th>
+							<th>Value</th>
+							<th>Action</th>
+							<th><span title="Completed count">#</span></th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		</div>
+	</body>
 </html>
