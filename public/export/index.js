@@ -22,10 +22,6 @@ const init = async () => {
 
 	const $ugcColumns = $('#ugc-columns');
 
-	const $dynamicRegex = $('#dynamic-regex');
-	const $dynamicRegexAdd = $('#dynamic-regex-add');
-	const $regexFields = $('#regex-fields');
-
 	const $results = $('#results');
 	const $resultsTable = $('#results-table');
 
@@ -136,17 +132,6 @@ const init = async () => {
 			params.set('keywordsFields', keywordsFields);
 		}
 
-		let $activeRegexFields = $('.dynamic-field', $regexFields);
-		if (!NodeList.prototype.isPrototypeOf($activeRegexFields)) {
-			$activeRegexFields = [$activeRegexFields];
-		}
-		if ($dynamicRegex.checked && $activeRegexFields.length > 0) {
-			const regexFields = Array.from($activeRegexFields)
-				.map((f) => f.value)
-				.join(',');
-			params.set('regexFields', regexFields);
-		}
-
 		return params;
 	};
 
@@ -174,10 +159,6 @@ const init = async () => {
 
 	$dynamicKeywordsAdd.addEventListener('click', () => {
 		$keywordsFields.appendChild(dynamicFieldAddTemplate.cloneNode(true));
-	});
-
-	$dynamicRegexAdd.addEventListener('click', () => {
-		$regexFields.appendChild(dynamicFieldAddTemplate.cloneNode(true));
 	});
 
 	if (window.location.search) {
@@ -212,16 +193,6 @@ const init = async () => {
 				const keywordsField = dynamicFieldAddTemplate.cloneNode(true);
 				$('input', keywordsField).value = f;
 				$keywordsFields.appendChild(keywordsField);
-			});
-		}
-
-		const regexFields = initialParams.get('regexFields');
-		if (regexFields) {
-			$dynamicRegex.checked = true;
-			regexFields.split(',').forEach((f) => {
-				const regexField = dynamicFieldAddTemplate.cloneNode(true);
-				$('input', regexField).value = f;
-				$regexFields.appendChild(regexField);
 			});
 		}
 

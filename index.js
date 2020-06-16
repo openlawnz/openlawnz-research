@@ -295,15 +295,6 @@ app.use(express.static('public'));
 		WHERE cases.court_id = main.courts.id
 	) AS court`;
 
-	const regexExists = (a) => `(
-		SELECT 
-		CASE WHEN (
-			SELECT regexp_matches(case_text, '${a}.*$', 'i'))[1] IS NULL 
-			THEN FALSE 
-			ELSE TRUE 
-		END
-	) AS ${a}_exists`;
-
 	const accColumn = (facetId, colName, facetName) => `
 		LEFT JOIN LATERAL (
 		SELECT
@@ -411,12 +402,6 @@ app.use(express.static('public'));
 		if (req.query.keywordsFields) {
 			req.query.keywordsFields.split(',').forEach((k) => {
 				s.push(keywordExists(k));
-			});
-		}
-
-		if (req.query.regexFields) {
-			req.query.regexFields.split(',').forEach((r) => {
-				s.push(regexExists(r));
 			});
 		}
 
