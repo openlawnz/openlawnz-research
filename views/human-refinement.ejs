@@ -3,18 +3,18 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title></title>
+		<title>OpenLaw NZ : <%= pageTitle %></title>
 		<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
-		<link rel="stylesheet" href="index.css" />
+		<link rel="stylesheet" href="/global/index.css" />
+		<link rel="stylesheet" href="/human-refinement/index.css" />
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js"></script>
-		<script src="index.js"></script>
+		<script type="module" src="/human-refinement/index.js"></script>
 	</head>
 	<body>
-		<header>
-			<img src="logo.svg" alt="OpenLaw NZ Logo" />
-			<h1>Human Refinement Centre</h1>
-		</header>
+        
+        <%- include('partials/header.ejs', { pageKey, pageTitle }) %>
+		
 		<div id="wrap" class="loading">
 			<nav>
 				<div id="casesList">

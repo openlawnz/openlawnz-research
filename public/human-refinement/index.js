@@ -1,15 +1,19 @@
+import pdfControl from "../global/pdfControl.js"
+import { $ } from "../global/utilities.js"
+
 const MINIMAP_SCALE = 0.2;
 
 const facetParserWorkers = [];
 let facets = null;
+let dateFacetResult;
+let booleanFacetResult;
+let pdfState;
 let searchResults;
 let booleanBoundingBoxes = {};
 let dateBoundingBoxes = {};
 
-let currentFacetId;
 let currentCaseData;
 let currentCase;
-let isLastFacet;
 
 let viewportNavigator;
 let $caseFacetsTableBody;
@@ -30,68 +34,9 @@ const months = [
 	'December',
 ];
 
-const $ = (selector, context) => {
-	const found = (context || document).querySelectorAll(selector);
-	return found.length > 1 ? found : found[0];
-};
-
-const renderPDFCanvas = (attachToEl, viewport, page) => {
-	let pdfCanvas = document.createElement('canvas');
-	attachToEl.appendChild(pdfCanvas);
-	let pdfContext = pdfCanvas.getContext('2d');
-	pdfCanvas.style.display = 'block';
-	pdfCanvas.height = viewport.height;
-	pdfCanvas.width = viewport.width;
-
-	page.render({
-		canvasContext: pdfContext,
-		viewport: viewport,
-	});
-};
-
-const loadPage = async (pageNumber, state) => {
-	const page = await state.doc.getPage(pageNumber);
-
-	var pdfViewport = page.getViewport({ scale: 1.0 });
-	var pdfMinimapViewport = page.getViewport({ scale: MINIMAP_SCALE });
-
-	renderPDFCanvas(state.pdfEl, pdfViewport, page);
-	renderPDFCanvas(state.pdfMinimapEl, pdfMinimapViewport, page);
-
-	if (state.pageWidth == -1) {
-		state.pageWidth = pdfViewport.width;
-		state.pageHeight = pdfViewport.height;
-		state.docHeight = state.pageHeight * state.numPages;
-	}
-
-	return state;
-};
-
-const processPDF = async (pdfURL, pdfEl, pdfMinimapEl) => {
-	const loadingTask = pdfjsLib.getDocument(pdfURL);
-	const doc = await loadingTask.promise;
-	const numPages = doc.numPages;
-
-	const state = {
-		doc,
-		pdfEl,
-		pdfMinimapEl,
-		pageWidth: -1,
-		pageHeight: -1,
-		docHeight: -1,
-		numPages: doc.numPages,
-	};
-
-	for (let i = 0; i < numPages; i++) {
-		await loadPage(i + 1, state);
-	}
-
-	return state;
-};
-
 const search = async (searchQuery, caseData) => {
-	return new Promise((resolve, reject) => {
-		const facetParserWorker = new Worker('facetTextParser.js');
+	return new Promise((resolve) => {
+		const facetParserWorker = new Worker('/global/pdfTextWorker.js');
 
 		const payload = {
 			facetData: {
@@ -110,8 +55,8 @@ const search = async (searchQuery, caseData) => {
 };
 
 const runDateFacetWorkers = async (facetCase, caseData) => {
-	return new Promise((resolve, reject) => {
-		const facetParserWorker = new Worker('facetTextParser.js');
+	return new Promise((resolve) => {
+		const facetParserWorker = new Worker('/global/pdfTextWorker.js');
 
 		const payload = {
 			facetData: facetCase,
@@ -128,9 +73,9 @@ const runDateFacetWorkers = async (facetCase, caseData) => {
 };
 
 const runBooleanFacetWorkers = async (facets, caseData) => {
-	return new Promise((resolve, reject) => {
+	return new Promise((resolve) => {
 		facets.forEach((f) => {
-			const facetParserWorker = new Worker('facetTextParser.js');
+			const facetParserWorker = new Worker('/global/pdfTextWorker.js');
 
 			facetParserWorkers.push(facetParserWorker);
 
@@ -158,7 +103,7 @@ const loadCaseData = async (caseMetaData) => {
 };
 
 const loadCase = async (caseId) => {
-	currentCase = await fetch(`/cases/${caseId}`).then((t) => t.json());
+	currentCase = await fetch(`/api/human-refinement/cases/${caseId}`).then((t) => t.json());
 
 	currentCaseData = await loadCaseData(currentCase.caseMeta);
 
@@ -172,7 +117,7 @@ const loadCase = async (caseId) => {
 	[dateFacetResult, booleanFacetResult, pdfState] = await Promise.all([
 		runDateFacetWorkers(dateFacets, currentCaseData),
 		runBooleanFacetWorkers(booleanFacets, currentCaseData),
-		processPDF(currentCase.caseMeta.pdfURL, pdfViewer, pdfMinimapInner),
+		pdfControl(currentCase.caseMeta.pdfURL, pdfViewer, pdfMinimapInner, MINIMAP_SCALE),
 	]);
 
 	pdfViewer.onscroll = function (e) {
@@ -420,8 +365,8 @@ const loadFacet = (facetId) => {
 		dateYear.value = year;
 	};
 
-	saveFacet = async (facetId, facetValue) => {
-		const json = await fetch(`/cases/${currentCase.caseMeta.id}`, {
+	const saveFacet = async (facetId, facetValue) => {
+		const json = await fetch(`/api/human-refinement/cases/${currentCase.caseMeta.id}`, {
 			method: 'POST',
 			body: JSON.stringify({
 				facetId,
@@ -530,7 +475,6 @@ const loadFacet = (facetId) => {
 
 window.onload = async () => {
 	$caseFacetsTableBody = $('#case-facets tbody');
-	$facetSelection = $('main');
 	$caseSearch = $('#search-case');
 	const $pdfSearchBar = $('#pdfSearchBar');
 	const $pdfSearchButton = $('#pdfSearchBarToggle');
@@ -617,7 +561,7 @@ window.onload = async () => {
 		}
 	};
 
-	const cases = await fetch('/cases').then((c) => c.json());
+	const cases = await fetch('/api/human-refinement/cases').then((c) => c.json());
 
 	const searchParams = new URLSearchParams(window.location.search);
 	let caseId = searchParams.get('caseId');
@@ -629,7 +573,7 @@ window.onload = async () => {
 
 	await loadCase(caseId);
 
-	$casesTableBody = $('#casesList tbody');
+	const $casesTableBody = $('#casesList tbody');
 
 	cases.forEach((c) => {
 		const tr = document.createElement('tr');

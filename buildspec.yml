@@ -6,3 +6,4 @@ artifacts:
     - package.json
     - package-lock.json
     - public/**/*
+    - views/**/*

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>OpenLaw NZ : <%= pageTitle %></title>
+		<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
+		<link rel="stylesheet" href="/global/index.css" />
+		<link rel="stylesheet" href="/export/index.css" />
+		<script src="/export/index.js"></script>
+	</head>
+	<body>
+		<%- include('partials/header.ejs', { pageKey, pageTitle }) %>
+
+		<div id="wrap" class="loading">
+			<main>
+				<form action="" method="GET" id="search-form">
+					<fieldset class="main-fieldset">
+						<legend>Data Source</legend>
+						<div id="data-source">
+							<div id="search-category">
+								<div>
+									<label for="search-category-field">Category</label>
+									<select id="search-category-field" name="category" required>
+										<option value="All">
+											All
+										</option>
+										<option value="ACC">
+											ACC
+										</option>
+									</select>
+								</div>
+							</div>
+
+							<div id="search-dates">
+								<div>
+									<label for="search-start-date">Start Date</label>
+									<input id="search-start-date" type="date" />
+								</div>
+
+								<div>
+									<label for="search-end-date">End Date</label>
+									<input id="search-end-date" type="date" />
+								</div>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="main-fieldset">
+						<legend>Columns</legend>
+
+						<div id="columns-columns">
+							<div>
+								<h2>Fixed</h2>
+								<label> <input type="checkbox" class="fixed-column" value="name" />Name </label>
+								<label> <input type="checkbox" class="fixed-column" value="date" />Date </label>
+								<label> <input type="checkbox" class="fixed-column" value="citation" />Citation </label>
+								<label> <input type="checkbox" class="fixed-column" value="court" />Court </label>
+								<label> <input type="checkbox" class="fixed-column" value="outcome" />Outcome </label>
+								<label> <input type="checkbox" class="fixed-column" value="cases-cited" />Cases cited </label>
+								<label>
+									<input type="checkbox" class="fixed-column" value="legislation-referenced" />Legislation referenced
+								</label>
+							</div>
+
+							<div>
+								<h2><span title="User Generated Content">UGC</span> Columns</h2>
+								<div id="ugc-columns"></div>
+							</div>
+
+							<div>
+								<h2>Dynamic</h2>
+
+								<fieldset class="dynamic-fieldset">
+									<legend>
+										<label><input type="checkbox" id="dynamic-keywords" />Keywords exist</label>
+									</legend>
+									<button type="button" id="dynamic-keywords-add" class="button">Add</button>
+
+									<div id="keywords-fields" class="dynamic-fields"></div>
+								</fieldset>
+
+								<fieldset class="dynamic-fieldset">
+									<legend>
+										<label><input type="checkbox" id="dynamic-regex" />Regular expression match</label>
+									</legend>
+									<button type="button" id="dynamic-regex-add" class="button">Add</button>
+									<div id="regex-fields" class="dynamic-fields"></div>
+								</fieldset>
+							</div>
+						</div>
+					</fieldset>
+					<div id="search-submit">
+						<button type="submit" id="search-button" class="button">Search</button>
+					</div>
+				</form>
+			</main>
+
+			<section id="results">
+				<div id="results-heading">
+					<h2>Results</h2>
+					<div>
+						<form method="get" id="export-form">
+							<select name="export-data-format" id="export-data-format">
+								<option value="csv">CSV</option>
+								<option value="json">JSON</option>
+							</select>
+							<button class="button" type="submit">Export</button>
+						</form>
+					</div>
+				</div>
+				<div id="results-table-wrap">
+					<table id="results-table"></table>
+				</div>
+			</section>
+		</div>
+	</body>
+</html>
+
+<template id="dynamic-field-template">
+	<div>
+		<input type="text" required class="dynamic-field" /><button type="button" class="button dynamic-field-delete">
+			-
+		</button>
+	</div>
+</template>

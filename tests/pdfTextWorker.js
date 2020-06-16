@@ -1,4 +1,4 @@
-const { wordSearch, booleanSearch } = require("../public/facetTextParser");
+const { wordSearch, booleanSearch } = require("../public/global/pdfTextWorker");
 
 describe("wordSearch", () => {
 
