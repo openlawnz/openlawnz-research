@@ -51,6 +51,14 @@ app.use(express.static('public'));
  */
 
 (() => {
+	// https://stackoverflow.com/a/12646864
+	const shuffleArray = (array) => {
+		for (let i = array.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[array[i], array[j]] = [array[j], array[i]];
+		}
+	};
+
 	app.get('/human-refinement', (req, res) => {
 		res.render('human-refinement', {
 			pageKey: 'human-refinement',
@@ -58,26 +66,78 @@ app.use(express.static('public'));
 		});
 	});
 
-	app.get('/api/human-refinement/cases', async (req, res) => {
-		const result = await client.query(`
-		SELECT 
-		main.cases.case_name,
-		main.cases.id,
-		(
-		  FLOOR ((
-			SELECT COUNT(*)
-			FROM funnel.facet_value_metadata
-			WHERE main.cases.id = funnel.facet_value_metadata.case_id
-		  ) / (
-			SELECT 
-			  COUNT(*) 
-			  FROM funnel.facets
-		  )) 
-		) AS processed_count
-	  FROM main.cases
-	  INNER JOIN main.category_to_cases ON main.cases.id = main.category_to_cases.case_id
-	  WHERE main.category_to_cases.category_id = 'acc'`);
+	app.post('/api/human-refinement/case-sets', async (req, res) => {
+		if (!req.body.setSize) {
+			throw new Error('Missing set size');
+		}
 
+		const setSize = parseInt(req.body.setSize);
+
+		const result = await client.query(`
+			SELECT 
+			main.cases.id,
+			main.cases.case_name
+			FROM main.cases
+			INNER JOIN main.category_to_cases ON main.cases.id = main.category_to_cases.case_id
+			WHERE main.category_to_cases.category_id = 'acc'
+		`);
+
+		let shuffledRows = result.rows.slice(0);
+		shuffleArray(shuffledRows);
+
+		const sets = [];
+		let currentSet = [];
+
+		for (let i = 0; i < shuffledRows.length; i++) {
+			if (i > 1 && i % setSize === 0) {
+				sets.push(currentSet);
+				currentSet = [];
+			}
+			currentSet.push(shuffledRows[i]);
+		}
+
+		if (currentSet.length > 0) {
+			sets.push(currentSet);
+		}
+
+		try {
+			await client.query('BEGIN');
+
+			await client.query(`
+		TRUNCATE
+		funnel.random_case_sets`);
+
+			await Promise.all(
+				sets.map((s) =>
+					client.query(
+						`
+				INSERT INTO
+				funnel.random_case_sets
+				(id, case_set)
+				VALUES ($1, $2)`,
+						[uuidv4(), JSON.stringify(s)]
+					)
+				)
+			);
+
+			await client.query('COMMIT');
+		} catch (ex) {
+			await client.query('ROLLBACK');
+			console.log(ex);
+		}
+
+		res.json({});
+	});
+
+	app.get('/api/human-refinement/cases-sets', async (req, res) => {
+		const result = await client.query(`
+		SELECT id FROM funnel.random_case_sets`);
+		res.json(result.rows);
+	});
+
+	app.get('/api/human-refinement/cases-sets/:id', async (req, res) => {
+		const result = await client.query(`
+		SELECT * FROM funnel.random_case_sets WHERE id=$1`, [req.params.id]);
 		res.json(result.rows);
 	});
 

@@ -334,3 +334,43 @@ main h2 span {
 #dateSeparated div:last-child input {
 	width: 60px;
 }
+
+#caseSetSettings {
+	border: 2px solid #000;
+	position: relative;
+}
+
+#closeCaseSetSettings {
+	position: absolute;
+	top: 0;
+	right: 0;
+	background: #fff;
+	border: 0;
+	outline: 0;
+	cursor: pointer;
+}
+
+#selectCaseFormList {
+	width: 150px;
+}
+
+#randomDataSetSize {
+	width: 60px;
+}
+
+#generatingRandomDataSet {
+	display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	justify-content: center;
+	align-items: center;
+	background: rgba(255,255,255,0.9);
+	font-weight: bold;
+}
+
+#generatingRandomDataSet.active {
+	display: flex;
+}

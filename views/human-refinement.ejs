@@ -12,11 +12,31 @@
 		<script type="module" src="/human-refinement/index.js"></script>
 	</head>
 	<body>
-        
-        <%- include('partials/header.ejs', { pageKey, pageTitle }) %>
-		
+		<%- include('partials/header.ejs', { pageKey, pageTitle }) %>
+		<dialog id="caseSetSettings">
+			<button id="closeCaseSetSettings">&times;</button>
+			<form id="generateRandomDataSetForm">
+				<fieldset>
+					<legend>Generate random data sets</legend>
+					<div>
+						<label>Set size: <input type="number" id="randomDataSetSize" /></label>
+						<button type="submit">Generate</button>
+					</div>
+				</fieldset>
+			</form>
+			<div id="generatingRandomDataSet">
+				Please wait...
+			</div>
+		</dialog>
 		<div id="wrap" class="loading">
 			<nav>
+				<form id="selectCaseSetForm">
+					<fieldset>
+						<legend>Select Case Set <button type="button" id="caseSetSettingsButton">⚙ Settings</button></legend>
+						<select id="selectCaseFormList"></select>
+						<button type="submit">Select</button>
+					</fieldset>
+				</form>
 				<div id="casesList">
 					<!-- <input type="search" placeholder="filter" /> -->
 					<div id="caseListTable">
@@ -24,7 +44,6 @@
 							<thead>
 								<tr>
 									<th>Case name</th>
-									<th><span title="Completed count">#</span></th>
 								</tr>
 							</thead>
 							<tbody></tbody>

@@ -11,11 +11,6 @@ body {
 	background: #fdfbf045;
 }
 
-fieldset label {
-	display: block;
-	font-size: 14px;
-}
-
 .loading {
 	position: relative;
 }

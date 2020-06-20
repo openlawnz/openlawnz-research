@@ -479,6 +479,36 @@ window.onload = async () => {
 	const $pdfSearchBar = $('#pdfSearchBar');
 	const $pdfSearchButton = $('#pdfSearchBarToggle');
 	const $pdfSearchInput = $('#pdfSearchBar input');
+	const $generateDataSetForm = $('#generateRandomDataSetForm');
+	const $closeCaseSetSettings = $('#closeCaseSetSettings');
+	const $selectCaseFormList = $('#selectCaseFormList');
+	const $selectCaseSetForm = $('#selectCaseSetForm');
+	const $randomDataSetSize = $('#randomDataSetSize');
+	const $generatingRandomDataSet = $('#generatingRandomDataSet');
+
+	$generateDataSetForm.onsubmit = async (e) => {
+
+		e.preventDefault();
+
+		if(!confirm("This will destroy previously generated case sets. No cases or facet answers will be lost.")) {
+			return;
+		}
+
+		$generatingRandomDataSet.classList.add('active');
+
+		await fetch('/api/human-refinement/case-sets', {
+			method: 'POST',
+			body: JSON.stringify({
+				setSize: $randomDataSetSize.value
+			}),
+			headers: {
+				'Content-Type': 'application/json',
+			}
+		}).then((c) => c.json());
+
+		window.location.assign('/human-refinement/');
+
+	}
 
 	$pdfSearchButton.onclick = () => {
 		$pdfSearchBar.classList.toggle('active');
@@ -561,17 +591,58 @@ window.onload = async () => {
 		}
 	};
 
-	const cases = await fetch('/api/human-refinement/cases').then((c) => c.json());
+	const caseSets = await fetch('/api/human-refinement/cases-sets').then((c) => c.json());
+	let cases = [];
+	let hasNewURL = false;
 
 	const searchParams = new URLSearchParams(window.location.search);
+	let caseSetId = searchParams.get('caseSetId');
 	let caseId = searchParams.get('caseId');
 
-	if (!caseId) {
+	if(caseSets.length === 0) {
+		caseSetSettings.showModal();
+		return;
+	}
+
+	caseSets.forEach(c => {
+
+		const option = document.createElement('option');
+		option.value = c.id;
+		option.text = c.id;
+		if(c.id == caseSetId) {
+			option.selected = true;
+		}
+		$selectCaseFormList.appendChild(option);
+
+	});
+
+	$selectCaseSetForm.onsubmit = (e) => {
+		e.preventDefault();
+		window.location.assign(`?caseSetId=${$selectCaseFormList.value}`)
+	}
+
+	if(!caseSetId) {
+		caseSetId = caseSets[0].id;
+		hasNewURL = true;
+	}
+
+	const caseSetResult = await fetch('/api/human-refinement/cases-sets/' + caseSetId).then((c) => c.json());
+	cases = caseSetResult[0].case_set;
+
+	if(!caseId) {
 		caseId = cases[0].id;
-		history.pushState(null, null, `?caseId=${caseId}`);
+		hasNewURL = true;
+	}
+
+	if(hasNewURL){
+		history.replaceState(null, null, `?caseSetId=${caseSetId}&caseId=${caseId}`);
 	}
 
 	await loadCase(caseId);
+
+	caseSetSettingsButton.onclick = () => caseSetSettings.showModal();
+
+	$closeCaseSetSettings.onclick = () => caseSetSettings.close();
 
 	const $casesTableBody = $('#casesList tbody');
 
@@ -582,10 +653,7 @@ window.onload = async () => {
 		}
 		$casesTableBody.appendChild(tr);
 		const caseNameTd = document.createElement('td');
-		caseNameTd.innerHTML = `<a href="?caseId=${c.id}">${c.case_name}</a>`;
+		caseNameTd.innerHTML = `<a href="?caseSetId=${caseSetId}&caseId=${c.id}">${c.case_name}</a>`;
 		tr.appendChild(caseNameTd);
-		const processedCountTd = document.createElement('td');
-		processedCountTd.innerText = c.processed_count;
-		tr.appendChild(processedCountTd);
 	});
 };
