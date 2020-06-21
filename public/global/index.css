@@ -11,11 +11,11 @@ body {
 	background: #fdfbf045;
 }
 
-.loading {
+#wrap.loading {
 	position: relative;
 }
 
-.loading:after {
+#wrap.loading:after {
 	content: 'Loading...';
 	position: absolute;
 	top: 50%;
@@ -24,7 +24,7 @@ body {
 	display: block;
 }
 
-.loading * {
+#wrap.loading * {
 	visibility: collapse;
 }
 

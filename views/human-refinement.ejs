@@ -13,7 +13,7 @@
 	</head>
 	<body>
 		<%- include('partials/header.ejs', { pageKey, pageTitle }) %>
-		<dialog id="caseSetSettings">
+		<dialog id="caseSetSettingsDialog">
 			<button id="closeCaseSetSettings">&times;</button>
 			<form id="generateRandomDataSetForm">
 				<fieldset>
@@ -52,6 +52,7 @@
 				</div>
 			</nav>
 			<main id="main">
+				<div id="mainBody">
 				<div id="facetHeadingWrap">
 					<details id="facetBooleanHeadingDetails">
 						<summary id="facetBooleanHeading"></summary>
@@ -65,7 +66,7 @@
 						<div id="pdfSearchBar">
 							<button id="pdfSearchBarToggle">🔍</button>
 							<div>
-								<input type="search" placeholder="Search case" id="search-case" autocomplete="false" />
+								<input type="search" placeholder="Search case" id="pdfSearchInput" autocomplete="false" />
 							</div>
 							<div id="pdfSearchNavigation">
 								<button id="pdfSearchPrev">⬆</button>
@@ -119,20 +120,27 @@
 						</div>
 					</div>
 				</div>
+			</div>
 			</main>
 
-			<div id="case-facets">
-				<table>
-					<thead>
-						<tr>
-							<th>Facet</th>
-							<th>Value</th>
-							<th>Action</th>
-							<th><span title="Completed count">#</span></th>
-						</tr>
-					</thead>
-					<tbody></tbody>
-				</table>
+			<div id="caseFacets">
+				<div id="caseFacetsNavigation">
+					<p id="currentCaseName"></p>
+					<button id="nextCase">Next case</button>
+				</div>
+				<div id="caseFacetsTableWrap">
+					<table>
+						<thead>
+							<tr>
+								<th>Facet</th>
+								<th>Value</th>
+								<th>Action</th>
+								<th><span title="Completed count">#</span></th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
 			</div>
 		</div>
 	</body>

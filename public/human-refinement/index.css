@@ -86,19 +86,22 @@
 }
 
 #casesList table td {
-	font-size: 10px;
+	font-size: 12px;
 }
 
 #casesList table td a {
 	color: #333;
 }
 
+#casesList table td a:hover {
+	color: #3f7578;
+}
+
 main {
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	align-items: center;
 	flex-grow: 1;
-	width: 50vw;
 	padding: 20px;
 }
 
@@ -112,37 +115,67 @@ main h2 span {
 	font-size: 24px;
 }
 
-#case-facets {
-	padding: 20px 20px 20px 0;
-	box-sizing: border-box;
+#mainBody {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
 }
 
-#case-facets table {
+#caseFacets {
+	padding: 20px 20px 20px 0;
+	box-sizing: border-box;
+	transition: opacity 0.125s;
+	width: 28vw;
+}
+
+#caseFacets.loading {
+	opacity: 0.7;
+	pointer-events: none;
+}
+
+#caseFacetsNavigation {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+#currentCaseName {
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#nextCase {
+	flex-shrink: 0;
+	margin-left: 15px;
+}
+
+#caseFacets table {
 	width: 100%;
 	border: 1px solid #333;
 	border-collapse: collapse;
 }
 
-#case-facets table th {
+#caseFacets table th {
 	background: #333;
 	color: #fff;
 	top: 30px;
 	text-align: left;
 }
 
-#case-facets table th,
-#case-facets table td {
+#caseFacets table th,
+#caseFacets table td {
 	border: 1px solid #333;
 	font-size: 14px;
 	padding: 5px;
 }
 
-#case-facets tr.active td {
+#caseFacets tr.active td {
 	background: #3f7578;
 	color: #fff;
 }
 
-#case-facets tr td:not(:first-child) {
+#caseFacets tr td:not(:first-child) {
 	text-align: center;
 }
 
@@ -206,7 +239,14 @@ main h2 span {
 	display: flex;
 	position: relative;
 	flex-grow: 1;
+	transition: opacity 0.125s;
 }
+
+#pdf.loading {
+	opacity: 0.7;
+	pointer-events: none;
+}
+
 #pdfViewerOuter {
 	width: 595px;
 	height: 100%;
@@ -367,7 +407,7 @@ main h2 span {
 	height: 100%;
 	justify-content: center;
 	align-items: center;
-	background: rgba(255,255,255,0.9);
+	background: rgba(255, 255, 255, 0.9);
 	font-weight: bold;
 }
 

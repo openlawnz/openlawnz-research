@@ -149,7 +149,12 @@ app.use(express.static('public'));
 
 		const pdfURLID = accsplit[1].split('.pdf')[0] + '-' + accsplit[0] + '.pdf.json';
 
-		const [allFacets, userValues] = await Promise.all([
+		const [caseData, allFacets, userValues] = await Promise.all([
+			client.query(`
+				SELECT id, case_name 
+				FROM main.cases 
+				WHERE id = $1
+			`, [caseId]),
 			client.query(
 				`
 		  SELECT 
@@ -197,6 +202,7 @@ app.use(express.static('public'));
 		let response = {
 			caseMeta: {
 				id: caseId,
+				caseName: caseData.rows[0].case_name,
 				pdfJSON: `${process.env.PDF_JSON_BASE_PATH}${pdfURLID}`,
 				pdfURL: `${process.env.PDF_BASE_PATH}${caseId}`,
 			},

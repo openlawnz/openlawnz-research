@@ -1,23 +1,52 @@
-import pdfControl from "../global/pdfControl.js"
-import { $ } from "../global/utilities.js"
+import pdfControl from '../global/pdfControl.js';
+import { $ } from '../global/utilities.js';
 
 const MINIMAP_SCALE = 0.2;
 
-const facetParserWorkers = [];
-let facets = null;
-let dateFacetResult;
-let booleanFacetResult;
+const facetParserWorkers = {};
+let isLoading = false;
 let pdfState;
 let searchResults;
 let booleanBoundingBoxes = {};
 let dateBoundingBoxes = {};
 
+let currentCaseSetId;
 let currentCaseData;
 let currentCase;
 
-let viewportNavigator;
+// Case facets elements;
+let $currentCaseName;
+let $nextCase;
+let $caseFacetsTable;
 let $caseFacetsTableBody;
-let $caseSearch;
+
+// Case search elements
+let $pdfSearchInput;
+let $pdfSearchBar;
+let $pdfSearchPrev;
+let $pdfSearchNext;
+let $pdfSearchButton;
+
+// Generate case sets elements
+let $generateDataSetForm;
+let $closeCaseSetSettings;
+let $selectCaseFormList;
+let $selectCaseSetForm;
+let $randomDataSetSize;
+let $generatingRandomDataSet;
+
+// Case sidebar elements
+let $casesTableBody;
+let $caseSetSettingsDialog;
+let $caseSetSettingsButton;
+
+// PDF Viewer
+let $pdf;
+let $pdfViewer;
+let $pdfViewerOuter;
+let $pdfMinimapOuter;
+let $pdfMinimapInner;
+let viewportNavigator;
 
 const months = [
 	'January',
@@ -36,7 +65,15 @@ const months = [
 
 const search = async (searchQuery, caseData) => {
 	return new Promise((resolve) => {
-		const facetParserWorker = new Worker('/global/pdfTextWorker.js');
+
+		let facetParserWorker;
+
+		if(facetParserWorkers['search']) {
+			facetParserWorker = facetParserWorkers['search'];
+		} else {
+			facetParserWorker = new Worker('/global/pdfTextWorker.js');
+			facetParserWorkers['search'] = facetParserWorker;
+		}
 
 		const payload = {
 			facetData: {
@@ -56,7 +93,14 @@ const search = async (searchQuery, caseData) => {
 
 const runDateFacetWorkers = async (facetCase, caseData) => {
 	return new Promise((resolve) => {
-		const facetParserWorker = new Worker('/global/pdfTextWorker.js');
+		let facetParserWorker;
+
+		if(facetParserWorkers['date']) {
+			facetParserWorker = facetParserWorkers['date'];
+		} else {
+			facetParserWorker = new Worker('/global/pdfTextWorker.js');
+			facetParserWorkers['date'] = facetParserWorker;
+		}
 
 		const payload = {
 			facetData: facetCase,
@@ -75,9 +119,15 @@ const runDateFacetWorkers = async (facetCase, caseData) => {
 const runBooleanFacetWorkers = async (facets, caseData) => {
 	return new Promise((resolve) => {
 		facets.forEach((f) => {
-			const facetParserWorker = new Worker('/global/pdfTextWorker.js');
+			
+			let facetParserWorker;
 
-			facetParserWorkers.push(facetParserWorker);
+			if(facetParserWorkers[f.id]) {
+				facetParserWorker = facetParserWorkers[f.id];
+			} else {
+				facetParserWorker = new Worker('/global/pdfTextWorker.js');
+				facetParserWorkers[f.id] = facetParserWorker;
+			}
 
 			const payload = {
 				facetData: f,
@@ -87,6 +137,7 @@ const runBooleanFacetWorkers = async (facets, caseData) => {
 			facetParserWorker.onmessage = function (e) {
 				const facetData = e.data;
 				booleanBoundingBoxes[facetData.id] = facetData.boundingBoxes;
+
 				if (Object.keys(booleanBoundingBoxes).length === facets.length) {
 					resolve();
 				}
@@ -103,80 +154,42 @@ const loadCaseData = async (caseMetaData) => {
 };
 
 const loadCase = async (caseId) => {
+	if (isLoading) {
+		return;
+	} else if (!isLoading) {
+		isLoading = true;
+	}
+
+	history.pushState(null, document.title, `?caseSetId=${currentCaseSetId}&caseId=${caseId}` + window.location.hash);
+
+	$caseFacetsTable.classList.add('loading');
+	$pdf.classList.add('loading');
+	$pdfMinimapInner.innerHTML = '';
+	$pdfViewer.innerHTML = '';
+
+	Array.from($casesTableBody.querySelectorAll('tr')).forEach((tr) => {
+		if (tr.dataset.caseid == caseId) {
+			tr.classList.add('active');
+		} else {
+			tr.classList.remove('active');
+		}
+	});
+
 	currentCase = await fetch(`/api/human-refinement/cases/${caseId}`).then((t) => t.json());
 
 	currentCaseData = await loadCaseData(currentCase.caseMeta);
 
-	pdfViewer.style.height = pdfViewerOuter.offsetHeight + 'px';
-
-	let isDraggingViewport = false;
-
 	const dateFacets = currentCase.facets.find((f) => f.type == 'date');
 	const booleanFacets = currentCase.facets.filter((f) => f.type == 'boolean');
+
+	let dateFacetResult;
+	let booleanFacetResult;
 
 	[dateFacetResult, booleanFacetResult, pdfState] = await Promise.all([
 		runDateFacetWorkers(dateFacets, currentCaseData),
 		runBooleanFacetWorkers(booleanFacets, currentCaseData),
-		pdfControl(currentCase.caseMeta.pdfURL, pdfViewer, pdfMinimapInner, MINIMAP_SCALE),
+		pdfControl(currentCase.caseMeta.pdfURL, $pdfViewer, $pdfMinimapInner, MINIMAP_SCALE),
 	]);
-
-	pdfViewer.onscroll = function (e) {
-		pdfMinimapInner.style.transform = `translateY(-${pdfViewer.scrollTop * MINIMAP_SCALE}px)`;
-	};
-
-	pdfMinimapOuter.onclick = function (e) {
-		if (isDraggingViewport) {
-			return;
-		}
-
-		const startY = e.clientY - pdfMinimapOuter.getClientRects()[0].top;
-		const clickY = parseFloat(
-			pdfMinimapInner.style.transform ? pdfMinimapInner.style.transform.match(/translateY\((.*)px/)[1] : 0
-		);
-		const calculatedY = -startY + clickY + 10;
-
-		pdfViewer.scrollTop = Math.abs(calculatedY) / MINIMAP_SCALE;
-	};
-
-	viewportNavigator = document.createElement('div');
-	pdfMinimapOuter.appendChild(viewportNavigator);
-	viewportNavigator.classList.add('viewportNavigator');
-	viewportNavigator.style.backgroundColor = 'rgba(0,0,0,0.2)';
-	viewportNavigator.style.width = '100%';
-	viewportNavigator.style.height = pdfViewer.getClientRects()[0].height * MINIMAP_SCALE + 'px';
-	viewportNavigator.style.position = 'absolute';
-	viewportNavigator.style.top = 0;
-	viewportNavigator.style.left = 0;
-	viewportNavigator.style.zIndex = 4;
-
-	let lastPos = null;
-	// Add drag behaviour
-	viewportNavigator.onmousedown = () => {
-		isDraggingViewport = true;
-		pdfViewer.classList.add('dragging');
-
-		document.body.onmousemove = (e) => {
-			if (lastPos) {
-				const delta = e.clientY - lastPos;
-
-				pdfViewer.scrollTop =
-					pdfViewer.scrollTop +
-					(delta * viewportNavigator.offsetHeight) / MINIMAP_SCALE / (viewportNavigator.offsetHeight * MINIMAP_SCALE);
-			}
-
-			lastPos = e.clientY;
-		};
-
-		document.body.onmouseup = () => {
-			pdfViewer.classList.remove('dragging');
-			document.body.onmousemove = () => {};
-			document.body.onmouseup = () => {};
-			setTimeout(() => {
-				isDraggingViewport = false;
-				lastPos = null;
-			}, 10);
-		};
-	};
 
 	$caseFacetsTableBody.innerHTML = null;
 
@@ -215,7 +228,11 @@ const loadCase = async (caseId) => {
 		}
 	}
 
-	document.querySelector('.loading').classList.remove('loading');
+	$caseFacetsTable.classList.remove('loading');
+	$pdf.classList.remove('loading');
+	$currentCaseName.innerText = currentCase.caseMeta.caseName;
+
+	isLoading = false;
 };
 
 window.onresize = () => {
@@ -287,6 +304,14 @@ const processPages = (el, pages, scale, cssClass) => {
 };
 
 const loadFacet = (facetId) => {
+
+	Array.from($('.pdfDivPoint') || []).forEach((p) => p.remove());
+
+	dateSubmit.value = '';
+	dateDay.value = '';
+	dateMonth.value = '';
+	dateYear.value = '';
+
 	const facet = currentCase.facets.find((f) => f.id == facetId);
 
 	window.location.hash = facetId;
@@ -323,6 +348,39 @@ const loadFacet = (facetId) => {
 
 	submitBooleanNA.onclick = async () => {
 		saveFacet(facetId, null);
+	};
+
+	const saveFacet = async (facetId, facetValue) => {
+		const json = await fetch(`/api/human-refinement/cases/${currentCase.caseMeta.id}`, {
+			method: 'POST',
+			body: JSON.stringify({
+				facetId,
+				facetValue,
+				type: facet.type,
+				not_applicable: facetValue == null,
+			}),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		}).then((r) => r.json());
+	
+		//$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
+	
+		facet.value = facetValue;
+		facet.not_applicable = facetValue == null;
+		facet.completedCount = parseInt(facet.completedCount) + 1;
+		const nextFacetId = findNextFacet();
+	
+		dateSubmit.value = '';
+		dateDay.value = '';
+		dateMonth.value = '';
+		dateYear.value = '';
+	
+		if (nextFacetId) {
+			loadFacet(nextFacetId);
+		} else {
+			refreshFacetTable(facetId);
+		}
 	};
 
 	dateSubmit.onchange = () => {
@@ -365,41 +423,6 @@ const loadFacet = (facetId) => {
 		dateYear.value = year;
 	};
 
-	const saveFacet = async (facetId, facetValue) => {
-		const json = await fetch(`/api/human-refinement/cases/${currentCase.caseMeta.id}`, {
-			method: 'POST',
-			body: JSON.stringify({
-				facetId,
-				facetValue,
-				type: facet.type,
-				not_applicable: facetValue == null,
-			}),
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		}).then((r) => r.json());
-
-		//$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
-
-		facet.value = facetValue;
-		facet.not_applicable = facetValue == null;
-		facet.completedCount = parseInt(facet.completedCount) + 1;
-		const nextFacetId = findNextFacet();
-
-		dateSubmit.value = '';
-		dateDay.value = '';
-		dateMonth.value = '';
-		dateYear.value = '';
-
-		if (nextFacetId) {
-			loadFacet(nextFacetId);
-		} else {
-			refreshFacetTable(facetId);
-		}
-	};
-
-	Array.from($('.pdfDivPoint') || []).forEach((p) => p.remove());
-
 	const pages = facet.type == 'boolean' ? booleanBoundingBoxes[facetId] : dateBoundingBoxes.boundingBoxes;
 
 	const pdfViewEls = processPages(pdfViewer, pages, 1.0, 'pdfDivPoint');
@@ -422,7 +445,7 @@ const loadFacet = (facetId) => {
 		el.style.borderBottom = `2px solid red`;
 	});
 
-	const pdfMinimapEls = processPages(pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint');
+	const pdfMinimapEls = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint');
 
 	pdfMinimapEls.forEach((el) => {
 		el.style.backgroundColor = `red`;
@@ -474,41 +497,66 @@ const loadFacet = (facetId) => {
 };
 
 window.onload = async () => {
-	$caseFacetsTableBody = $('#case-facets tbody');
-	$caseSearch = $('#search-case');
-	const $pdfSearchBar = $('#pdfSearchBar');
-	const $pdfSearchButton = $('#pdfSearchBarToggle');
-	const $pdfSearchInput = $('#pdfSearchBar input');
-	const $generateDataSetForm = $('#generateRandomDataSetForm');
-	const $closeCaseSetSettings = $('#closeCaseSetSettings');
-	const $selectCaseFormList = $('#selectCaseFormList');
-	const $selectCaseSetForm = $('#selectCaseSetForm');
-	const $randomDataSetSize = $('#randomDataSetSize');
-	const $generatingRandomDataSet = $('#generatingRandomDataSet');
+	// Case facets elements
+	$nextCase = $('#nextCase');
+	$currentCaseName = $('#currentCaseName');
+	$caseFacetsTable = $('#caseFacets');
+	$caseFacetsTableBody = $('#caseFacets tbody');
+
+	// Case search elements
+	$pdfSearchBar = $('#pdfSearchBar');
+	$pdfSearchPrev = $('#pdfSearchPrev');
+	$pdfSearchNext = $('#pdfSearchNext');
+	$pdfSearchButton = $('#pdfSearchBarToggle');
+	$pdfSearchInput = $('#pdfSearchBar input');
+
+	// Generate case sets elements
+	$generateDataSetForm = $('#generateRandomDataSetForm');
+	$closeCaseSetSettings = $('#closeCaseSetSettings');
+	$selectCaseFormList = $('#selectCaseFormList');
+	$selectCaseSetForm = $('#selectCaseSetForm');
+	$randomDataSetSize = $('#randomDataSetSize');
+	$generatingRandomDataSet = $('#generatingRandomDataSet');
+
+	// Case sidebar elements
+	$casesTableBody = $('#casesList tbody');
+	$caseSetSettingsDialog = $('#caseSetSettingsDialog');
+	$caseSetSettingsButton = $('#caseSetSettingsButton');
+
+	// PDF Viewer
+	$pdf = $('#pdf');
+	$pdfViewer = $('#pdfViewer');
+	$pdfViewerOuter = $('#pdfViewerOuter');
+	$pdfMinimapOuter = $('#pdfMinimapOuter');
+	$pdfMinimapInner = $('#pdfMinimapInner');
+
+	//---------------------------------------
+	// Generate case sets
+	//---------------------------------------
 
 	$generateDataSetForm.onsubmit = async (e) => {
-
 		e.preventDefault();
-
-		if(!confirm("This will destroy previously generated case sets. No cases or facet answers will be lost.")) {
+		if (!confirm('This will destroy previously generated case sets. No cases or facet answers will be lost.')) {
 			return;
 		}
-
 		$generatingRandomDataSet.classList.add('active');
-
 		await fetch('/api/human-refinement/case-sets', {
 			method: 'POST',
 			body: JSON.stringify({
-				setSize: $randomDataSetSize.value
+				setSize: $randomDataSetSize.value,
 			}),
 			headers: {
 				'Content-Type': 'application/json',
-			}
+			},
 		}).then((c) => c.json());
-
 		window.location.assign('/human-refinement/');
+	};
 
-	}
+	//---------------------------------------
+	// PDF search
+	//---------------------------------------
+
+	let currentSearchPos = -1;
 
 	$pdfSearchButton.onclick = () => {
 		$pdfSearchBar.classList.toggle('active');
@@ -522,22 +570,20 @@ window.onload = async () => {
 		}
 	};
 
-	let currentSearchPos = -1;
-
 	const goToSearchPoint = (index) => {
 		const newPos = searchResults[index].offsetTop;
-		pdfViewer.scrollTop = newPos - 10 - pdfSearchBar.offsetHeight;
+		$pdfViewer.scrollTop = newPos - 10 - $pdfSearchBar.offsetHeight;
 		currentSearchPos = index;
 	};
 
-	pdfSearchPrev.onclick = () => {
+	$pdfSearchPrev.onclick = () => {
 		if (currentSearchPos === 0) {
 			return;
 		}
 		goToSearchPoint(currentSearchPos - 1);
 	};
 
-	pdfSearchNext.onclick = () => {
+	$pdfSearchNext.onclick = () => {
 		if (currentSearchPos === searchResults.length - 1) {
 			return;
 		}
@@ -546,7 +592,7 @@ window.onload = async () => {
 
 	let searchDebounce;
 
-	$caseSearch.onkeyup = async (e) => {
+	$pdfSearchInput.onkeyup = async (e) => {
 		clearTimeout(searchDebounce);
 
 		// if(e.keyCode == 27) {
@@ -557,11 +603,11 @@ window.onload = async () => {
 		searchDebounce = setTimeout(async () => {
 			Array.from($('.searchDivPoint') || []).forEach((p) => p.remove());
 
-			if (!$caseSearch.value) {
+			if (!$pdfSearchInput.value) {
 				return;
 			}
 
-			const searchResultsWithBoundingBoxes = await search($caseSearch.value, currentCaseData);
+			const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
 			searchResults = processPages(pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint');
 
 			searchResults.forEach((el) => {
@@ -575,7 +621,7 @@ window.onload = async () => {
 			});
 
 			const pdfMinimapEls = processPages(
-				pdfMinimapInner,
+				$pdfMinimapInner,
 				searchResultsWithBoundingBoxes.boundingBoxes,
 				MINIMAP_SCALE,
 				'searchDivPoint'
@@ -591,69 +637,163 @@ window.onload = async () => {
 		}
 	};
 
+	//=======================================
+	// Init sequence
+	//=======================================
+
+	//---------------------------------------
+	// Load case sets
+	//---------------------------------------
+
 	const caseSets = await fetch('/api/human-refinement/cases-sets').then((c) => c.json());
 	let cases = [];
-	let hasNewURL = false;
 
 	const searchParams = new URLSearchParams(window.location.search);
 	let caseSetId = searchParams.get('caseSetId');
 	let caseId = searchParams.get('caseId');
 
-	if(caseSets.length === 0) {
-		caseSetSettings.showModal();
+	if (caseSets.length === 0) {
+		$caseSetSettingsDialog.showModal();
 		return;
 	}
 
-	caseSets.forEach(c => {
-
+	caseSets.forEach((c) => {
 		const option = document.createElement('option');
 		option.value = c.id;
 		option.text = c.id;
-		if(c.id == caseSetId) {
+		if (c.id == caseSetId) {
 			option.selected = true;
 		}
 		$selectCaseFormList.appendChild(option);
-
 	});
 
 	$selectCaseSetForm.onsubmit = (e) => {
 		e.preventDefault();
-		window.location.assign(`?caseSetId=${$selectCaseFormList.value}`)
+		window.location.assign(`?caseSetId=${$selectCaseFormList.value}`);
+	};
+
+	if (!caseSetId) {
+		caseSetId = caseSets[0].id;
 	}
 
-	if(!caseSetId) {
-		caseSetId = caseSets[0].id;
-		hasNewURL = true;
-	}
+	currentCaseSetId = caseSetId;
 
 	const caseSetResult = await fetch('/api/human-refinement/cases-sets/' + caseSetId).then((c) => c.json());
 	cases = caseSetResult[0].case_set;
 
-	if(!caseId) {
-		caseId = cases[0].id;
-		hasNewURL = true;
-	}
+	//---------------------------------------
+	// Cases sidebar
+	//---------------------------------------
 
-	if(hasNewURL){
-		history.replaceState(null, null, `?caseSetId=${caseSetId}&caseId=${caseId}`);
-	}
+	$caseSetSettingsButton.onclick = () => $caseSetSettingsDialog.showModal();
 
-	await loadCase(caseId);
-
-	caseSetSettingsButton.onclick = () => caseSetSettings.showModal();
-
-	$closeCaseSetSettings.onclick = () => caseSetSettings.close();
-
-	const $casesTableBody = $('#casesList tbody');
+	$closeCaseSetSettings.onclick = () => $caseSetSettingsDialog.close();
 
 	cases.forEach((c) => {
 		const tr = document.createElement('tr');
-		if (caseId == c.id) {
-			tr.classList.add('active');
-		}
 		$casesTableBody.appendChild(tr);
+		tr.dataset.caseid = c.id;
 		const caseNameTd = document.createElement('td');
-		caseNameTd.innerHTML = `<a href="?caseSetId=${caseSetId}&caseId=${c.id}">${c.case_name}</a>`;
+
+		const link = document.createElement('a');
+		link.href = `?caseSetId=${caseSetId}&caseId=${c.id}`;
+		link.innerText = c.case_name;
+		link.onclick = function (caseId, e) {
+			e.preventDefault();
+			loadCase(caseId);
+		}.bind(null, c.id);
+		caseNameTd.appendChild(link);
 		tr.appendChild(caseNameTd);
 	});
+
+	if (!caseId) {
+		caseId = cases[0].id;
+	}
+
+	//---------------------------------------
+	// Load case
+	//---------------------------------------
+
+	// Constrain height first
+	$pdfViewer.style.height = $pdfViewerOuter.offsetHeight + 'px';
+
+	await loadCase(caseId);
+
+	//---------------------------------------
+	// PDF Viewer
+	//---------------------------------------
+
+	let isDraggingViewport = false;
+
+	$pdfViewer.onscroll = function (e) {
+		$pdfMinimapInner.style.transform = `translateY(-${pdfViewer.scrollTop * MINIMAP_SCALE}px)`;
+	};
+
+	$pdfMinimapOuter.onclick = function (e) {
+		if (isDraggingViewport) {
+			return;
+		}
+		const startY = e.clientY - $pdfMinimapOuter.getClientRects()[0].top;
+		const clickY = parseFloat(
+			$pdfMinimapInner.style.transform ? $pdfMinimapInner.style.transform.match(/translateY\((.*)px/)[1] : 0
+		);
+		const calculatedY = -startY + clickY + 10;
+
+		$pdfViewer.scrollTop = Math.abs(calculatedY) / MINIMAP_SCALE;
+	};
+
+	viewportNavigator = document.createElement('div');
+	$pdfMinimapOuter.appendChild(viewportNavigator);
+	viewportNavigator.classList.add('viewportNavigator');
+	viewportNavigator.style.backgroundColor = 'rgba(0,0,0,0.2)';
+	viewportNavigator.style.width = '100%';
+	viewportNavigator.style.height = $pdfViewer.getClientRects()[0].height * MINIMAP_SCALE + 'px';
+	viewportNavigator.style.position = 'absolute';
+	viewportNavigator.style.top = 0;
+	viewportNavigator.style.left = 0;
+	viewportNavigator.style.zIndex = 4;
+
+	let lastPos = null;
+	// Add drag behaviour
+	viewportNavigator.onmousedown = () => {
+		isDraggingViewport = true;
+		$pdfViewer.classList.add('dragging');
+
+		document.body.onmousemove = (e) => {
+			if (lastPos) {
+				const delta = e.clientY - lastPos;
+
+				$pdfViewer.scrollTop =
+					$pdfViewer.scrollTop +
+					(delta * viewportNavigator.offsetHeight) / MINIMAP_SCALE / (viewportNavigator.offsetHeight * MINIMAP_SCALE);
+			}
+
+			lastPos = e.clientY;
+		};
+
+		document.body.onmouseup = () => {
+			$pdfViewer.classList.remove('dragging');
+			document.body.onmousemove = () => {};
+			document.body.onmouseup = () => {};
+			setTimeout(() => {
+				isDraggingViewport = false;
+				lastPos = null;
+			}, 10);
+		};
+	};
+
+
+	//---------------------------------------
+	// Next Case handling
+	//---------------------------------------
+	$nextCase.onclick = () => {
+		const nextCase = $casesTableBody.querySelector('tr.active + tr a');
+		if(nextCase) {
+			nextCase.click();
+		} else {
+			alert('End of cases for this case set');
+		}
+	}
+
+	$('#wrap.loading').classList.remove('loading');
 };
