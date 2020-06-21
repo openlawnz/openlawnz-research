@@ -6,7 +6,7 @@ const MINIMAP_SCALE = 0.2;
 const facetParserWorkers = {};
 let isLoading = false;
 let pdfState;
-let searchResults;
+let searchResultsWraps;
 let booleanBoundingBoxes = {};
 let dateBoundingBoxes = {};
 
@@ -65,10 +65,9 @@ const months = [
 
 const search = async (searchQuery, caseData) => {
 	return new Promise((resolve) => {
-
 		let facetParserWorker;
 
-		if(facetParserWorkers['search']) {
+		if (facetParserWorkers['search']) {
 			facetParserWorker = facetParserWorkers['search'];
 		} else {
 			facetParserWorker = new Worker('/global/pdfTextWorker.js');
@@ -95,7 +94,7 @@ const runDateFacetWorkers = async (facetCase, caseData) => {
 	return new Promise((resolve) => {
 		let facetParserWorker;
 
-		if(facetParserWorkers['date']) {
+		if (facetParserWorkers['date']) {
 			facetParserWorker = facetParserWorkers['date'];
 		} else {
 			facetParserWorker = new Worker('/global/pdfTextWorker.js');
@@ -119,10 +118,9 @@ const runDateFacetWorkers = async (facetCase, caseData) => {
 const runBooleanFacetWorkers = async (facets, caseData) => {
 	return new Promise((resolve) => {
 		facets.forEach((f) => {
-			
 			let facetParserWorker;
 
-			if(facetParserWorkers[f.id]) {
+			if (facetParserWorkers[f.id]) {
 				facetParserWorker = facetParserWorkers[f.id];
 			} else {
 				facetParserWorker = new Worker('/global/pdfTextWorker.js');
@@ -277,34 +275,45 @@ const refreshFacetTable = (facetId) => {
 };
 
 const processPages = (el, pages, scale, cssClass) => {
-	const els = [];
+	const wraps = [];
 
 	pages.forEach((page, pageI) => {
 		const offset = Math.floor(pdfState.pageHeight) * scale * pageI;
 
 		page.forEach((p) => {
-			const pdfDivPoint = document.createElement('div');
-			pdfDivPoint.classList.add(cssClass);
-			pdfDivPoint.style.position = 'absolute';
-			pdfDivPoint.style.left = p.boxes[0] * scale + 'px';
-			pdfDivPoint.style.top = offset + p.boxes[1] * scale + 'px';
-			pdfDivPoint.style.width = (p.boxes[2] - p.boxes[0]) * scale + 'px';
-			pdfDivPoint.style.height = (p.boxes[5] - p.boxes[1]) * scale + 'px';
+			const pdfDivPointWrap = document.createElement('div');
+			pdfDivPointWrap.classList.add(cssClass + 'Wrap');
+
+			const pointEls = [];
+
+			p.boxes.forEach((boxes) => {
+				const pdfDivPoint = document.createElement('div');
+				pdfDivPoint.classList.add(cssClass);
+				pdfDivPoint.style.position = 'absolute';
+				pdfDivPoint.style.left = boxes[0] * scale + 'px';
+				pdfDivPoint.style.top = offset + boxes[1] * scale + 'px';
+				pdfDivPoint.style.width = (boxes[2] - boxes[0]) * scale + 'px';
+				pdfDivPoint.style.height = (boxes[5] - boxes[1]) * scale + 'px';
+				pdfDivPointWrap.appendChild(pdfDivPoint);
+				pointEls.push(pdfDivPoint);
+			});
 
 			if (p.optionValue) {
-				pdfDivPoint.dataset.option = p.optionValue;
+				pdfDivPointWrap.dataset.option = p.optionValue.trim();
 			}
 
-			els.push(pdfDivPoint);
-			el.appendChild(pdfDivPoint);
+			wraps.push({
+				wrap: pdfDivPointWrap,
+				points: pointEls,
+			});
+			el.appendChild(pdfDivPointWrap);
 		});
 	});
 
-	return els;
+	return wraps;
 };
 
 const loadFacet = (facetId) => {
-
 	Array.from($('.pdfDivPoint') || []).forEach((p) => p.remove());
 
 	dateSubmit.value = '';
@@ -363,19 +372,19 @@ const loadFacet = (facetId) => {
 				'Content-Type': 'application/json',
 			},
 		}).then((r) => r.json());
-	
+
 		//$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
-	
+
 		facet.value = facetValue;
 		facet.not_applicable = facetValue == null;
 		facet.completedCount = parseInt(facet.completedCount) + 1;
 		const nextFacetId = findNextFacet();
-	
+
 		dateSubmit.value = '';
 		dateDay.value = '';
 		dateMonth.value = '';
 		dateYear.value = '';
-	
+
 		if (nextFacetId) {
 			loadFacet(nextFacetId);
 		} else {
@@ -425,30 +434,41 @@ const loadFacet = (facetId) => {
 
 	const pages = facet.type == 'boolean' ? booleanBoundingBoxes[facetId] : dateBoundingBoxes.boundingBoxes;
 
-	const pdfViewEls = processPages(pdfViewer, pages, 1.0, 'pdfDivPoint');
+	const pdfViewWraps = processPages(pdfViewer, pages, 1.0, 'pdfDivPoint');
 
-	pdfViewEls.forEach((el) => {
-		if (el.dataset.option) {
-			const button = document.createElement('button');
-			button.onclick = function (value) {
-				dateSubmit.value = value;
-				dateSubmit.onchange();
-			}.bind(null, el.dataset.option.trim());
-			button.innerHTML = `Select <strong>${el.dataset.option}</strong>`;
-			const span = document.createElement('span');
-			span.appendChild(button);
-			el.appendChild(span);
-			el.classList.add('hoverable');
-		}
-		el.style.boxSizing = `content-box`;
-		el.style.paddingBottom = '2px';
-		el.style.borderBottom = `2px solid red`;
+	const dates = [];
+
+	pdfViewWraps.forEach((pointWrap) => {
+		pointWrap.points.forEach((el) => {
+			// Should be added to the wrap element at the first element's x,y
+			if (pointWrap.wrap.dataset.option) {
+				const button = document.createElement('button');
+				button.onclick = function (value) {
+					dateSubmit.value = value;
+					dateSubmit.onchange();
+				}.bind(null, pointWrap.wrap.dataset.option);
+				button.innerHTML = `Select <strong>${pointWrap.wrap.dataset.option}</strong>`;
+				const span = document.createElement('span');
+				span.appendChild(button);
+				el.appendChild(span);
+				el.classList.add('hoverable');
+				if(dates.indexOf(pointWrap.wrap.dataset.option) == -1) {
+					dates.push(pointWrap.wrap.dataset.option);
+				}
+			}
+
+			el.style.boxSizing = `content-box`;
+			el.style.paddingBottom = '2px';
+			el.style.borderBottom = `2px solid red`;
+		});
 	});
 
-	const pdfMinimapEls = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint');
+	const pdfMinimapElsWraps = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint');
 
-	pdfMinimapEls.forEach((el) => {
-		el.style.backgroundColor = `red`;
+	pdfMinimapElsWraps.forEach((pointWrap) => {
+		pointWrap.points.forEach((el) => {
+			el.style.backgroundColor = `red`;
+		});
 	});
 
 	if (facet.type === 'boolean') {
@@ -457,12 +477,11 @@ const loadFacet = (facetId) => {
 	} else {
 		submitBoolean.style.display = 'none';
 		submitDate.style.display = 'block';
-		const dateOptions = [...new Set(pdfViewEls.map((el) => el.dataset.option))];
 		let option = document.createElement('option');
 		option.value = '';
 		option.text = '- Select -';
 		dateSubmit.appendChild(option);
-		dateOptions.forEach((d) => {
+		dates.forEach((d) => {
 			let option = document.createElement('option');
 			option.value = d.trim();
 			option.text = d.trim();
@@ -473,7 +492,11 @@ const loadFacet = (facetId) => {
 	refreshFacetTable(facetId);
 
 	const goToPoint = (index) => {
-		const newPos = pdfViewEls[index].offsetTop;
+		pdfViewWraps.forEach((w) => w.wrap.classList.remove('active'));
+		const newWrap = pdfViewWraps[index];
+		newWrap.wrap.classList.add('active');
+
+		const newPos = newWrap.points[0].offsetTop;
 		pdfViewer.scrollTop = newPos - 10;
 		currentSelectedPos = index;
 	};
@@ -486,7 +509,7 @@ const loadFacet = (facetId) => {
 	};
 
 	pdfNext.onclick = () => {
-		if (currentSelectedPos === pdfViewEls.length - 1) {
+		if (currentSelectedPos === pdfViewWraps.length - 1) {
 			return;
 		}
 		goToPoint(currentSelectedPos + 1);
@@ -571,7 +594,10 @@ window.onload = async () => {
 	};
 
 	const goToSearchPoint = (index) => {
-		const newPos = searchResults[index].offsetTop;
+		searchResultsWraps.forEach((w) => w.wrap.classList.remove('active'));
+		const newWrap = searchResultsWraps[index];
+		newWrap.wrap.classList.add('active');
+		const newPos = newWrap.points[0].offsetTop;
 		$pdfViewer.scrollTop = newPos - 10 - $pdfSearchBar.offsetHeight;
 		currentSearchPos = index;
 	};
@@ -584,7 +610,7 @@ window.onload = async () => {
 	};
 
 	$pdfSearchNext.onclick = () => {
-		if (currentSearchPos === searchResults.length - 1) {
+		if (currentSearchPos === searchResultsWraps.length - 1) {
 			return;
 		}
 		goToSearchPoint(currentSearchPos + 1);
@@ -601,34 +627,37 @@ window.onload = async () => {
 		// }
 
 		searchDebounce = setTimeout(async () => {
-			Array.from($('.searchDivPoint') || []).forEach((p) => p.remove());
+			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
 
 			if (!$pdfSearchInput.value) {
 				return;
 			}
 
 			const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
-			searchResults = processPages(pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint');
+			searchResultsWraps = processPages(pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint');
 
-			searchResults.forEach((el) => {
-				el.style.boxSizing = `content-box`;
-				el.style.paddingBottom = '2px';
-				el.style.paddingTop = '2px';
-				el.style.paddingLeft = '2px';
-				el.style.paddingRight = '2px';
-				el.style.transform = `translate(-2px, -2px)`;
-				el.style.backgroundColor = `#0000ff7a`;
+			searchResultsWraps.forEach((pointWrap) => {
+				pointWrap.points.forEach((el) => {
+					el.style.boxSizing = `content-box`;
+					el.style.paddingBottom = '2px';
+					el.style.paddingTop = '2px';
+					el.style.paddingLeft = '2px';
+					el.style.paddingRight = '2px';
+					el.style.transform = `translate(-2px, -2px)`;
+					el.style.backgroundColor = `#0000ff7a`;
+				});
 			});
 
-			const pdfMinimapEls = processPages(
+			const pdfMinimapElsWraps = processPages(
 				$pdfMinimapInner,
 				searchResultsWithBoundingBoxes.boundingBoxes,
 				MINIMAP_SCALE,
 				'searchDivPoint'
 			);
-
-			pdfMinimapEls.forEach((el) => {
-				el.style.backgroundColor = `blue`;
+			pdfMinimapElsWraps.forEach((pointWrap) => {
+				pointWrap.points.forEach((el) => {
+					el.style.backgroundColor = `blue`;
+				});
 			});
 		}, 500);
 
@@ -782,18 +811,17 @@ window.onload = async () => {
 		};
 	};
 
-
 	//---------------------------------------
 	// Next Case handling
 	//---------------------------------------
 	$nextCase.onclick = () => {
 		const nextCase = $casesTableBody.querySelector('tr.active + tr a');
-		if(nextCase) {
+		if (nextCase) {
 			nextCase.click();
 		} else {
 			alert('End of cases for this case set');
 		}
-	}
+	};
 
 	$('#wrap.loading').classList.remove('loading');
 };

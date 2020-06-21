@@ -296,6 +296,10 @@ main h2 span {
 	left: 0;
 }
 
+.pdfDivPointWrap.active > div {
+	background: rgba(0,0,0,0.1);
+}
+
 #pdfNavigation {
 	margin-bottom: 15px;
 }

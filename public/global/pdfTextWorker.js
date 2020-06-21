@@ -44,7 +44,7 @@ const wordSearch = (caseData, query) => {
 					if (composition.join('_') == amArr.join('_')) {
 						compositionWords.forEach((w) => {
 							currentPage.push({
-								boxes: w.boundingBox.map((b) => b * 72),
+								boxes: [w.boundingBox.map((b) => b * 72)],
 							});
 						});
 
@@ -63,10 +63,8 @@ const wordSearch = (caseData, query) => {
 							composition.push(amArr[currentSearchIndex]);
 							compositionWords.push(allWords[currentSearchIndex - 1]);
 							if (composition.join('_') == amArr.join('_')) {
-								compositionWords.forEach((w) => {
-									currentPage.push({
-										boxes: w.boundingBox.map((b) => b * 72),
-									});
+								currentPage.push({
+									boxes: compositionWords.map((w) => w.boundingBox.map((b) => b * 72)),
 								});
 
 								found = true;
@@ -104,7 +102,7 @@ const booleanSearch = (caseData, facetData) => {
 					l.words.forEach((w) => {
 						if (textExists(w.text, f.value, false, f.wholeWord)) {
 							currentPage.push({
-								boxes: w.boundingBox.map((b) => b * 72),
+								boxes: [w.boundingBox.map((b) => b * 72)],
 							});
 						}
 					});
@@ -164,11 +162,9 @@ const dateSearch = (caseData) => {
 							composition.push(amArr[currentSearchIndex]);
 							compositionWords.push(allWords[currentSearchIndex - 1]);
 							if (composition.join('_') == amArr.join('_')) {
-								compositionWords.forEach((w) => {
-									currentPage.push({
-										optionValue: aM,
-										boxes: w.boundingBox.map((b) => b * 72),
-									});
+								currentPage.push({
+									optionValue: aM,
+									boxes: compositionWords.map((w) => w.boundingBox.map((b) => b * 72)),
 								});
 
 								found = true;
