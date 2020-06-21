@@ -455,11 +455,11 @@ const loadFacet = (facetId) => {
 		let year = '';
 
 		if (dateSubmit.value) {
-			const dateParts = dateSubmit.value.split(/\s+/g);
-
+			const dateTrimmed = dateSubmit.value.replace(/(?<!u)(st|nd|rd|th)|day|of/gi,'');
+			const dateParts = dateTrimmed.split(/\s+/g);
+			
 			if (dateParts.length === 3) {
-				day = dateParts[0];
-				console.log(parseInt(dateParts[1]));
+				day = parseInt(dateParts[0]);
 				// Month
 				if (isNaN(parseInt(dateParts[1]))) {
 					month = months.findIndex((m) => dateParts[1].trim().toLowerCase().includes(m.toLowerCase())) + 1;

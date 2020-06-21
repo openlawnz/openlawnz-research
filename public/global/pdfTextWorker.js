@@ -1,6 +1,6 @@
 // This code needs cleaning up
 
-const dateRegex = /((((31)?(?!\s+(Feb(ruary)?|Apr(il)?|June?|(Sep(?=\b|t)t?|Nov)(ember)?)))|((30|29)?(?!\s+Feb(ruary)?))|((29)?(?=\s+Feb(ruary)?\s+(((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00)))))|(0?[1-9])|1\d|2[0-8])\s+(Jan(uary)?|Feb(ruary)?|Ma(r(ch)?|y)|Apr(il)?|Ju((ly?)|(ne?))|Aug(ust)?|Oct(ober)?|(Sep(?=\b|t)t?|Nov|Dec)(ember)?),?\s+((1[6-9]|[2-9]\d)\d{2}))/gim;
+const dateRegex = /(((((31)?(?!\s+(Feb(ruary)?|Apr(il)?|June?|(Sep(?=\b|t)t?|Nov)(ember)?)))|((30|29)?(?!\s+Feb(ruary)?))|((29)?(?=\s+Feb(ruary)?\s+(((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00)))))|(0?[1-9])|1\d|2[0-8])\s+(Jan(uary)?|Feb(ruary)?|Ma(r(ch)?|y)|Apr(il)?|Ju((ly?)|(ne?))|Aug(ust)?|Oct(ober)?|(Sep(?=\b|t)t?|Nov|Dec)(ember)?),?\s+((1[6-9]|[2-9]\d)\d{2}))|((\d{2}(?<!u)(st|nd|rd|th)?)\s+(?:day\s+of)\s+(\w*)\s+(\d{4})))/gim;
 
 const textExists = (text, findText, loose, wholeWord) => {
 	if (loose) {
@@ -194,30 +194,22 @@ const dateSearch = (caseData) => {
 onmessage = function (e) {
 	const { facetData, caseData } = JSON.parse(e.data);
 
+	let boundingBoxes;
+
 	if (facetData.id === 'search' && facetData.searchQuery.length > 0) {
-		const boundingBoxes = wordSearch(caseData, facetData.searchQuery);
-
-		postMessage({
-			id: facetData.id,
-			boundingBoxes,
-		});
+		boundingBoxes = wordSearch(caseData, facetData.searchQuery);
 	} else if (facetData.type === 'boolean') {
-		const boundingBoxes = booleanSearch(caseData, facetData);
-
-		postMessage({
-			id: facetData.id,
-			boundingBoxes,
-		});
+		boundingBoxes = booleanSearch(caseData, facetData);
 	} else if (facetData.type === 'date') {
-		const boundingBoxes = dateSearch(caseData);
-
-		postMessage({
-			id: facetData.id,
-			boundingBoxes,
-		});
+		boundingBoxes = dateSearch(caseData);
 	} else {
 		throw new Error('Unknown facet type');
 	}
+
+	postMessage({
+		id: facetData.id,
+		boundingBoxes,
+	});
 };
 
 // For unit testing
