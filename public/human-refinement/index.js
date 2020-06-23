@@ -261,7 +261,66 @@ const loadCase = async (caseId) => {
 		buttonSet.onclick = loadFacet.bind(null, facet.id);
 
 		tr.dataset.facet = facet.id;
+		
+
 		facetTd.innerHTML = facet.name;
+
+		if(facet.type === "boolean") {
+			
+			const facetListIcon = document.createElement('span');
+			const facetListDialog = document.createElement('dialog');
+			facetListDialog.classList.add('facetDialog');
+
+			facetListDialog.innerHTML = `<h1>Keywords for ${facet.name}</h1>`;
+
+			const closeButton = document.createElement('button');
+			closeButton.onclick = () => facetListDialog.close();
+			closeButton.innerText = "Close";
+			facetListDialog.appendChild(closeButton);
+
+			const table = document.createElement('table');
+			facetListDialog.appendChild(table);
+
+			const thead = document.createElement('thead');
+			table.appendChild(thead);
+
+			const theadRow = document.createElement('tr');
+			thead.appendChild(theadRow);
+
+			const tHeadValue = document.createElement('th');
+			tHeadValue.innerText = 'Value';
+			theadRow.appendChild(tHeadValue);
+
+			const tHeadWholeWord = document.createElement('th');
+			tHeadWholeWord.innerText = 'Whole word';
+			theadRow.appendChild(tHeadWholeWord);
+
+			const tbody = document.createElement('tbody');
+			table.appendChild(tbody);
+
+			facet.options.forEach(o => {
+
+				const bodyRow = document.createElement('tr');
+				tbody.appendChild(bodyRow);
+
+				const bodyValue = document.createElement('td');
+				bodyValue.innerText = o.value;
+				bodyRow.appendChild(bodyValue);
+
+				const bodyWholeWord = document.createElement('td');
+				bodyWholeWord.innerText = o.wholeWord;
+				bodyRow.appendChild(bodyWholeWord);
+
+			});
+
+			document.body.appendChild(facetListDialog);
+
+			facetListIcon.classList.add('facetIcon');
+			facetListIcon.innerText = 'ⓘ';
+			facetListIcon.onclick = () => facetListDialog.showModal();
+			facetTd.appendChild(facetListIcon);
+		}
+
 		completedTd.innerHTML = facet.completedCount;
 
 		tr.appendChild(facetTd);
