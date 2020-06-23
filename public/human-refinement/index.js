@@ -514,7 +514,7 @@ const loadFacet = (facetId) => {
 		let year = '';
 
 		if (dateSubmit.value) {
-			const dateTrimmed = dateSubmit.value.replace(/(?<!u)(st|nd|rd|th)|day|of/gi,'');
+			const dateTrimmed = dateSubmit.value.replace(/(?<!u)(st|nd|rd|th)|day|of|\./gi,'');
 			const dateParts = dateTrimmed.split(/\s+/g);
 			
 			if (dateParts.length === 3) {
