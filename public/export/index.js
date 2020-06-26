@@ -62,7 +62,7 @@ const init = async () => {
 						row.forEach((col) => {
 							const td = document.createElement('td');
 							if (typeof col === 'object') {
-								if (col !== null) {
+								if (col !== null && col.length > 0) {
 									td.innerHTML = `<details><summary>Details</summary><pre>${JSON.stringify(
 										col,
 										null,
@@ -78,7 +78,7 @@ const init = async () => {
 								});
 								td.innerHTML += `</ul>`;
 							} else {
-								td.innerText = col;
+								td.innerText = col || 'null';
 							}
 							tr.appendChild(td);
 						});
@@ -149,13 +149,13 @@ const init = async () => {
 		search(params);
 	});
 
-	Array.from($dynamicFields).forEach((d) =>
-		d.addEventListener('click', (e) => {
-			if (e.target.classList.contains('dynamic-field-delete')) {
-				e.target.parentNode.remove();
-			}
-		})
-	);
+	
+	$dynamicFields.addEventListener('click', (e) => {
+		if (e.target.classList.contains('dynamic-field-delete')) {
+			e.target.parentNode.remove();
+		}
+	})
+
 
 	$dynamicKeywordsAdd.addEventListener('click', () => {
 		$keywordsFields.appendChild(dynamicFieldAddTemplate.cloneNode(true));

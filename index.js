@@ -330,28 +330,32 @@ app.use(express.static('public'));
 
 (() => {
 	const legislationQuery = `(
-		ARRAY(
-			SELECT DISTINCT main.legislation.title 
+
+		SELECT json_agg(item) as legislation FROM
+		(
+			SELECT DISTINCT
+				main.legislation.title, 
+				main.legislation_to_cases.section
 			FROM main.legislation
 			INNER JOIN main.legislation_to_cases ON main.legislation.id = main.legislation_to_cases.legislation_id
-			WHERE main.legislation_to_cases.case_id = cases.id
-		)
-	) AS legislation`;
+			WHERE main.legislation_to_cases.case_id = m.id
+		) as item
+	)`;
 
 	const citationQuery = `(
 		ARRAY(
 			SELECT DISTINCT main.case_citations.citation
 			FROM  main.case_citations
-			WHERE main.case_citations.case_id = cases.id
+			WHERE main.case_citations.case_id = m.id
 		)
 	) AS citation`;
 
 	const casesCitedQuery = `(
 		ARRAY(
-			SELECT cases.case_name 
-			FROM main.cases
-			INNER JOIN main.cases_cited ON cases.id = main.cases_cited.case_cited
-			WHERE main.cases_cited.case_origin = cases.id
+				SELECT main.cases.case_name
+				FROM main.cases_cited
+				INNER JOIN main.cases ON main.cases.id = main.cases_cited.case_cited
+				WHERE main.cases_cited.case_origin = m.id
 		)
 	) AS cases_cited`;
 
@@ -488,19 +492,19 @@ app.use(express.static('public'));
 
 		if (req.query.startDate) {
 			dateRangeValues.push(req.query.startDate);
-			dateRangeStr += 'WHERE main.cases.case_date >= $1';
+			dateRangeStr += 'WHERE m.case_date >= $1';
 		}
 		if (req.query.endDate) {
 			dateRangeValues.push(req.query.endDate);
 			const joiner = req.query.startDate ? ' AND' : 'WHERE ';
-			dateRangeStr += `${joiner} main.cases.case_date < $2`;
+			dateRangeStr += `${joiner} m.case_date < $2`;
 		}
 
 		let q = `
 		SELECT * FROM (
 			SELECT
 				${s.join(',')}
-			FROM main.cases
+			FROM main.cases as m
 			${dateRangeStr}
 				
 		) as ol ${lateralJoins.map((l) => l.sql).join('\n')}`;
