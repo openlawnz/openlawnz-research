@@ -10,6 +10,7 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js"></script>
 		<script type="module" src="/human-refinement/index.js"></script>
+		<script src="/human-refinement/rowSorter.js"></script>
 	</head>
 	<body>
 		<%- include('partials/header.ejs', { pageKey, pageTitle }) %>
@@ -102,13 +103,19 @@
 
 									<button id="dateSubmitButton">Submit</button>
 									<button id="dateNAButton">N/A</button>
+									<button id="dateUnsureButton">Unsure</button>
 								</div>
 							</div>
 
 							<div id="submitBoolean">
-								<button id="submitBooleanYes">✔ Yes</button>
-								<button id="submitBooleanNo">✘ No</button>
-								<button id="submitBooleanNA">N/A</button>
+								<div>
+									<button id="submitBooleanYes">✔ Yes</button>
+									<button id="submitBooleanNo">✘ No</button>
+								</div>
+								<div>
+									<button id="submitBooleanNA">N/A</button>
+									<button id="submitBooleanUnsure">Unsure</button>
+								</div>
 							</div>
 						</div>
 						<div id="pdfNavigation">
@@ -132,6 +139,7 @@
 					<table>
 						<thead>
 							<tr>
+								<th>Sort</th>
 								<th>Facet</th>
 								<th>Value</th>
 								<th>Action</th>

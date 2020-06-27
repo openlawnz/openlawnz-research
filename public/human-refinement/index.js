@@ -1,3 +1,7 @@
+/*
+This project is deliberately vanilla javascript.
+*/
+
 const $ = (selector, context) => {
 	const found = (context || document).querySelectorAll(selector);
 	return found.length > 1 ? found : found[0];
@@ -64,6 +68,19 @@ const months = [
 	'November',
 	'December',
 ];
+
+const loadLocalFacetOrdering = () => {
+
+	let localFacetOrdering = localStorage.getItem('localFacetOrdering');
+	if(localFacetOrdering) {
+		return JSON.parse(localFacetOrdering)
+	}
+	return null;
+}
+
+const saveLocalFacetOrdering = (localFacetOrdering) => {
+	localStorage.setItem('localFacetOrdering', JSON.stringify(localFacetOrdering))
+}
 
 const renderPDFCanvas = (attachToEl, viewport, page) => {
 	let pdfCanvas = document.createElement('canvas');
@@ -248,9 +265,23 @@ const loadCase = async (caseId) => {
 
 	$caseFacetsTableBody.innerHTML = null;
 
-	currentCase.facets.forEach((facet, i) => {
+	let currentCaseFacets = currentCase.facets;
+
+	const localFacetOrdering = loadLocalFacetOrdering();
+
+	if(localFacetOrdering) {
+		// TODO: Handle new facets
+		currentCaseFacets.sort((a, b) => {
+			return localFacetOrdering[a.id] - localFacetOrdering[b.id];
+		});
+	}
+
+	currentCaseFacets.forEach((facet, i) => {
 		const tr = document.createElement('tr');
 		const facetTd = document.createElement('td');
+		const sortableTd = document.createElement('td');
+		sortableTd.classList.add('sortable');
+		sortableTd.innerText = '↕';
 		const valueTd = document.createElement('td');
 		const actionTd = document.createElement('td');
 		const completedTd = document.createElement('td');
@@ -262,11 +293,9 @@ const loadCase = async (caseId) => {
 
 		tr.dataset.facet = facet.id;
 
-
 		facetTd.innerHTML = facet.name;
 
-		if (facet.type === "boolean") {
-
+		if (facet.type === 'boolean') {
 			const facetListIcon = document.createElement('span');
 			const facetListDialog = document.createElement('dialog');
 			facetListDialog.classList.add('facetDialog');
@@ -275,7 +304,7 @@ const loadCase = async (caseId) => {
 
 			const closeButton = document.createElement('button');
 			closeButton.onclick = () => facetListDialog.close();
-			closeButton.innerText = "Close";
+			closeButton.innerText = 'Close';
 			facetListDialog.appendChild(closeButton);
 
 			const table = document.createElement('table');
@@ -298,8 +327,7 @@ const loadCase = async (caseId) => {
 			const tbody = document.createElement('tbody');
 			table.appendChild(tbody);
 
-			facet.options.forEach(o => {
-
+			facet.options.forEach((o) => {
 				const bodyRow = document.createElement('tr');
 				tbody.appendChild(bodyRow);
 
@@ -310,7 +338,6 @@ const loadCase = async (caseId) => {
 				const bodyWholeWord = document.createElement('td');
 				bodyWholeWord.innerText = o.wholeWord;
 				bodyRow.appendChild(bodyWholeWord);
-
 			});
 
 			document.body.appendChild(facetListDialog);
@@ -323,6 +350,7 @@ const loadCase = async (caseId) => {
 
 		completedTd.innerHTML = facet.completedCount;
 
+		tr.appendChild(sortableTd);
 		tr.appendChild(facetTd);
 		tr.appendChild(valueTd);
 		tr.appendChild(actionTd);
@@ -333,18 +361,23 @@ const loadCase = async (caseId) => {
 	if (window.location.hash) {
 		loadFacet(window.location.hash.split('#')[1]);
 	} else {
-		const nextFacetId = findNextFacet();
-
-		if (nextFacetId) {
-			loadFacet(nextFacetId);
-		} else {
-			refreshFacetTable();
-		}
+		loadFacet(currentCase.facets[0].id);
 	}
 
 	$caseFacetsTable.classList.remove('loading');
 	$pdf.classList.remove('loading');
 	$currentCaseName.innerText = currentCase.caseMeta.caseName;
+
+	new RowSorter($('table', $caseFacetsTable), {
+		handler: 'td.sortable',
+		onDrop: function () {
+			let newOrder = {};
+			Array.from($caseFacetsTableBody.querySelectorAll('tr')).forEach((tr, i) => {
+				newOrder[tr.dataset.facet] = i;
+			});
+			saveLocalFacetOrdering(newOrder);
+		},
+	});
 
 	isLoading = false;
 };
@@ -355,16 +388,11 @@ window.onresize = () => {
 	}
 };
 
-const findNextFacet = () => {
-	const nextFacet = currentCase.facets.find((f) => f.value == null && f.not_applicable == null);
-	return nextFacet ? nextFacet.id : null;
-};
-
 const refreshFacetTable = (facetId) => {
 	Array.from($caseFacetsTableBody.querySelectorAll('tr')).forEach((tr) => {
 		const rowFacet = currentCase.facets.find((f) => f.id == tr.dataset.facet);
-		const valueTd = $('td:nth-child(2)', tr);
-		const completedTd = $('td:nth-child(4)', tr);
+		const valueTd = $('td:nth-child(3)', tr);
+		const completedTd = $('td:nth-child(5)', tr);
 
 		valueTd.innerHTML = null;
 		completedTd.innerHTML = rowFacet.completedCount;
@@ -374,7 +402,11 @@ const refreshFacetTable = (facetId) => {
 		} else {
 			tr.classList.remove('active');
 		}
-		if (rowFacet && rowFacet.value != null) {
+		if (rowFacet.not_applicable) {
+			valueTd.innerText = 'N/A';
+		} else if (rowFacet.unsure) {
+			valueTd.innerText = 'Unsure';
+		} else if (rowFacet && rowFacet.value != null) {
 			if (rowFacet.type == 'date') {
 				let dateStr = `${rowFacet.value[0] ? rowFacet.value[0] + '-' : ''}${months[rowFacet.value[1] - 1]}-${
 					rowFacet.value[2]
@@ -384,8 +416,6 @@ const refreshFacetTable = (facetId) => {
 			} else {
 				valueTd.innerText = rowFacet.value === true ? '✔' : '✘';
 			}
-		} else if (rowFacet.not_applicable) {
-			valueTd.innerText = 'N/A';
 		}
 	});
 };
@@ -501,11 +531,19 @@ const loadFacet = (facetId) => {
 	};
 
 	dateNAButton.onclick = async () => {
-		saveFacet(facetId, null);
+		saveFacet(facetId, 'na');
+	};
+
+	dateUnsureButton.onclick = async () => {
+		saveFacet(facetId, 'unsure');
 	};
 
 	submitBooleanNA.onclick = async () => {
-		saveFacet(facetId, null);
+		saveFacet(facetId, 'na');
+	};
+
+	submitBooleanUnsure.onclick = async () => {
+		saveFacet(facetId, 'unsure');
 	};
 
 	const saveFacet = async (facetId, facetValue) => {
@@ -513,9 +551,10 @@ const loadFacet = (facetId) => {
 			method: 'POST',
 			body: JSON.stringify({
 				facetId,
-				facetValue,
+				facetValue: facetValue !== 'unsure' && facetValue !== 'na' ? facetValue : null,
 				type: facet.type,
-				not_applicable: facetValue == null,
+				not_applicable: facetValue == 'na',
+				unsure: facetValue == 'unsure',
 			}),
 			headers: {
 				'Content-Type': 'application/json',
@@ -525,9 +564,15 @@ const loadFacet = (facetId) => {
 		//$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
 
 		facet.value = facetValue;
-		facet.not_applicable = facetValue == null;
+		facet.not_applicable = facetValue == 'na';
+		facet.unsure = facetValue == 'unsure';
 		facet.completedCount = parseInt(facet.completedCount) + 1;
-		const nextFacetId = findNextFacet();
+		let nextFacetId;
+		const nextFacet = $('tr.active + tr', $caseFacetsTableBody);
+		
+		if(nextFacet) {
+			nextFacetId = nextFacet.dataset.facet;
+		}
 
 		dateSubmit.value = '';
 		dateDay.value = '';
@@ -821,7 +866,7 @@ window.onload = async () => {
 	// Load case sets
 	//---------------------------------------
 
-	const caseSets = await fetch('/api/human-refinement/cases-sets').then((c) => c.json());
+	const caseSets = await fetch('/api/human-refinement/case-sets').then((c) => c.json());
 	let cases = [];
 
 	const searchParams = new URLSearchParams(window.location.search);
@@ -833,10 +878,10 @@ window.onload = async () => {
 		return;
 	}
 
-	caseSets.forEach((c) => {
+	caseSets.forEach((c, i) => {
 		const option = document.createElement('option');
 		option.value = c.id;
-		option.text = c.id;
+		option.text = `[${i + 1}] ${c.id}`;
 		if (c.id == caseSetId) {
 			option.selected = true;
 		}
@@ -854,7 +899,7 @@ window.onload = async () => {
 
 	currentCaseSetId = caseSetId;
 
-	const caseSetResult = await fetch('/api/human-refinement/cases-sets/' + caseSetId).then((c) => c.json());
+	const caseSetResult = await fetch('/api/human-refinement/case-sets/' + caseSetId).then((c) => c.json());
 	cases = caseSetResult[0].case_set;
 
 	//---------------------------------------
@@ -904,6 +949,8 @@ window.onload = async () => {
 	$pdfViewer.onscroll = function (e) {
 		$pdfMinimapInner.style.transform = `translateY(-${pdfViewer.scrollTop * MINIMAP_SCALE}px)`;
 	};
+
+	$pdfMinimapOuter.style.width = $pdfViewer.getClientRects()[0].width * MINIMAP_SCALE + 'px';
 
 	$pdfMinimapOuter.onclick = function (e) {
 		if (isDraggingViewport) {

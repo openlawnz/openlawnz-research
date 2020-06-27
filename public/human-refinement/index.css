@@ -175,8 +175,12 @@ main h2 span {
 	color: #fff;
 }
 
-#caseFacets tr td:not(:first-child) {
+#caseFacets tr td:not(:nth-child(2)) {
 	text-align: center;
+}
+
+#caseFacets td.sortable {
+	cursor: ns-resize;
 }
 
 /* Facet controls */
@@ -308,6 +312,14 @@ main h2 span {
 	margin-bottom: 15px;
 }
 
+#submitBoolean div {
+	text-align: center;
+}
+
+#submitBoolean div:first-child {
+	margin-bottom: 5px;
+}
+
 #submitDate {
 	text-align: center;
 	margin-bottom: 15px;
@@ -360,6 +372,7 @@ main h2 span {
 
 #dateSeparated {
 	display: flex;
+	justify-content: center;
 	margin: 0 -2px 10px -2px;
 }
 

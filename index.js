@@ -129,13 +129,13 @@ app.use(express.static('public'));
 		res.json({});
 	});
 
-	app.get('/api/human-refinement/cases-sets', async (req, res) => {
+	app.get('/api/human-refinement/case-sets', async (req, res) => {
 		const result = await client.query(`
 		SELECT id FROM funnel.random_case_sets`);
 		res.json(result.rows);
 	});
 
-	app.get('/api/human-refinement/cases-sets/:id', async (req, res) => {
+	app.get('/api/human-refinement/case-sets/:id', async (req, res) => {
 		const result = await client.query(`
 		SELECT * FROM funnel.random_case_sets WHERE id=$1`, [req.params.id]);
 		res.json(result.rows);
@@ -182,11 +182,13 @@ app.use(express.static('public'));
 		  SELECT 
 		  b.value AS boolean_value, 
 		  b.not_applicable AS boolean_not_applicable, 
+		  b.unsure AS boolean_unsure, 
 		  meta.ugc_id AS facet_id,
 		  d.date_day AS date_day,
 		  d.date_month AS date_month,
 		  d.date_year AS date_year,
-		  d.not_applicable AS date_not_applicable
+		  d.not_applicable AS date_not_applicable,
+		  d.unsure AS date_unsure
 		  FROM funnel.facet_value_metadata AS meta
 		  LEFT JOIN funnel.boolean_facet_values AS b
 			ON b.metadata_id = meta.id
@@ -233,6 +235,11 @@ app.use(express.static('public'));
 						? r.type === 'boolean'
 							? userValueResult.boolean_not_applicable
 							: userValueResult.date_not_applicable
+						: null,
+					unsure: userValueResult
+						? r.type === 'boolean'
+							? userValueResult.boolean_unsure
+							: userValueResult.date_unsure
 						: null,
 					...(r.type === 'boolean'
 						? {
@@ -284,9 +291,10 @@ app.use(express.static('public'));
 			  id, 
 			  metadata_id, 
 			  value,
-			  not_applicable
-			) VALUES ($1, $2, $3, $4)`,
-					[uuidv4(), metadataId, req.body.facetValue, req.body.not_applicable]
+			  not_applicable,
+			  unsure
+			) VALUES ($1, $2, $3, $4, $5)`,
+					[uuidv4(), metadataId, req.body.facetValue, req.body.not_applicable, req.body.unsure]
 				);
 			} else if (req.body.type == 'date') {
 				await client.query(
@@ -298,8 +306,9 @@ app.use(express.static('public'));
 			  date_day,
 			  date_month,
 			  date_year,
-			  not_applicable
-			) VALUES ($1, $2, $3, $4, $5, $6)`,
+			  not_applicable,
+			  unsure
+			) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
 					[
 						uuidv4(),
 						metadataId,
@@ -308,6 +317,7 @@ app.use(express.static('public'));
 						req.body.facetValue && req.body.facetValue[1] ? req.body.facetValue[1] : null,
 						req.body.facetValue && req.body.facetValue[2] ? req.body.facetValue[2] : null,
 						req.body.not_applicable,
+						req.body.unsure,
 					]
 				);
 			} else {
@@ -381,10 +391,12 @@ app.use(express.static('public'));
 					funnel.facet_value_metadata.date_recorded,
 					funnel.boolean_facet_values.value as boolean_value,
 					funnel.boolean_facet_values.not_applicable as boolean_not_applicable,
+					funnel.boolean_facet_values.unsure as boolean_unsure,
 					funnel.date_facet_values.date_day as date_day,
 					funnel.date_facet_values.date_month as date_month,
 					funnel.date_facet_values.date_year as date_year,
 					funnel.date_facet_values.not_applicable as date_not_applicable
+					funnel.date_facet_values.unsure as date_unsure
 				FROM funnel.facet_value_metadata 
 				INNER JOIN funnel.facets ON funnel.facets.id = funnel.facet_value_metadata.ugc_id
 				LEFT JOIN funnel.boolean_facet_values 
@@ -558,7 +570,11 @@ app.use(express.static('public'));
 										date_recorded: json.date_recorded,
 									};
 
-									if (json.boolean_not_applicable) {
+									if (json.boolean_unsure) {
+										ret.value = 'Unsure';
+									} else if (json.date_unsure) {
+										ret.value = 'Unsure';
+									} else if (json.boolean_not_applicable) {
 										ret.value = 'Not Applicable';
 									} else if (json.date_not_applicable) {
 										ret.value = 'Not Applicable';

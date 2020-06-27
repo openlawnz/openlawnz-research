@@ -11,6 +11,7 @@ const init = async () => {
 
 	const $searchForm = $('#search-form');
 	const $searchCategoryField = $('#search-category-field');
+	const $searchCaseSetField = $('#search-case-set-field');
 	const $searchStartDate = $('#search-start-date');
 	const $searchEndDate = $('#search-end-date');
 
@@ -32,6 +33,17 @@ const init = async () => {
 		label.innerHTML = `<input type="checkbox" class="ugc-column" value="${col.id}" />${col.name}`;
 		$ugcColumns.appendChild(label);
 	});
+
+	const caseSets = await fetch('/api/human-refinement/case-sets').then(c => c.json());
+
+	caseSets.forEach((caseSet, i) => {
+
+		const option = document.createElement('option');
+		option.value = caseSet.id;
+		option.text = `[${(i + 1)}] ${caseSet.id}`;
+		$searchCaseSetField.appendChild(option);
+
+	})
 
 	const exportData = async (params) => {
 		window.open(`/api/export/search?` + params.toString(), '_blank');
@@ -93,6 +105,7 @@ const init = async () => {
 		const params = new URLSearchParams();
 
 		params.set('category', $searchCategoryField.value);
+		params.set('caseSet', $searchCaseSetField.value)
 		if ($searchStartDate.value) {
 			params.set('startDate', $searchStartDate.value);
 		}
@@ -167,6 +180,11 @@ const init = async () => {
 		$searchCategoryField.value = initialParams.get('category') || 'All';
 		$searchStartDate.value = initialParams.get('startDate');
 		$searchEndDate.value = initialParams.get('endDate');
+		
+		const caseSet = initialParams.get('caseSet');
+		if(caseSet) {
+			$searchCaseSetField.value = caseSet;
+		}
 
 		const fixedColumns = initialParams.get('fixedColumns');
 
