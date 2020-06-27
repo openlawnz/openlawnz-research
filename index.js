@@ -421,7 +421,7 @@ const isAdmin = (user) => {
 					funnel.date_facet_values.date_day as date_day,
 					funnel.date_facet_values.date_month as date_month,
 					funnel.date_facet_values.date_year as date_year,
-					funnel.date_facet_values.not_applicable as date_not_applicable
+					funnel.date_facet_values.not_applicable as date_not_applicable,
 					funnel.date_facet_values.unsure as date_unsure
 				FROM funnel.facet_value_metadata 
 				INNER JOIN funnel.facets ON funnel.facets.id = funnel.facet_value_metadata.ugc_id

@@ -90,7 +90,7 @@ const init = async () => {
 								});
 								td.innerHTML += `</ul>`;
 							} else {
-								td.innerText = col || 'null';
+								td.innerText = col;
 							}
 							tr.appendChild(td);
 						});
