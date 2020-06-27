@@ -342,6 +342,12 @@ app.use(express.static('public'));
 		) as item
 	)`;
 
+	const judgeQuery = `(
+			SELECT DISTINCT main.judge_to_cases.name
+			FROM  main.judge_to_cases
+			WHERE main.judge_to_cases.case_id = m.id
+	) AS judge`;
+
 	const citationQuery = `(
 		ARRAY(
 			SELECT DISTINCT main.case_citations.citation
@@ -362,7 +368,7 @@ app.use(express.static('public'));
 	const courtsQuery = `(
 		SELECT main.courts.name
 		FROM  main.courts
-		WHERE cases.court_id = main.courts.id
+		WHERE m.court_id = main.courts.id
 	) AS court`;
 
 	const accColumn = (facetId, colName, facetName) => `
@@ -455,9 +461,6 @@ app.use(express.static('public'));
 						s.push(courtsQuery);
 						break;
 
-					case 'outcome':
-						break;
-
 					case 'cases-cited':
 						s.push(casesCitedQuery);
 						break;
@@ -465,6 +468,10 @@ app.use(express.static('public'));
 					case 'legislation-referenced':
 						s.push(legislationQuery);
 						break;
+
+					case 'judge':
+						s.push(judgeQuery);
+						break;	
 				}
 			});
 		}
