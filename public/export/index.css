@@ -77,9 +77,35 @@ main h2 {
 
 #search-category div {
 	display: flex;
+	align-items: center;
+}
+
+#search-case-set {
+	margin-left: 40px;
+	display: flex;
+	position: relative;
 }
 
 #search-category div label {
+	margin-right: 5px;
+}
+
+#search-case-set:before {
+	content: ' ';
+	position: absolute;
+	top: 0;
+	left: -20px;
+	width: 1px;
+	height: 100%;
+	background: #3f7578;
+}
+
+#search-case-set div {
+	display: flex;
+	align-items: center;
+}
+
+#search-case-set div label {
 	margin-right: 5px;
 }
 
@@ -101,6 +127,7 @@ main h2 {
 
 #search-dates div {
 	display: flex;
+	align-items: center;
 }
 
 #search-dates div label {
