@@ -410,7 +410,7 @@ const refreshFacetTable = (facetId) => {
 			if (rowFacet.type == 'date') {
 				let dateStr = `${rowFacet.value[0] ? rowFacet.value[0] + '-' : ''}${months[rowFacet.value[1] - 1]}-${
 					rowFacet.value[2]
-				}`;
+					}`;
 
 				valueTd.innerText = dateStr;
 			} else {
@@ -459,6 +459,37 @@ const processPages = (el, pages, scale, cssClass) => {
 	return wraps;
 };
 
+const extractDate = (dateString) => {
+	const dateTrimmed = dateString.replace(/(?<!u)(st|nd|rd|th)|day|of|\./gi, '');
+	const dateParts = dateTrimmed.split(/\s+/g);
+	let dateObj = {
+		'day' : null,
+		'month' : null,
+		'year' : null
+	};
+
+	if (dateParts.length === 3) {
+		dateObj['day'] = parseInt(dateParts[0]);
+		// Month
+		if (isNaN(parseInt(dateParts[1]))) {
+			dateObj['month'] = months.findIndex((m) => dateParts[1].trim().toLowerCase().includes(m.toLowerCase())) + 1;
+		} else {
+			dateObj['month'] = dateParts[1];
+		}
+		dateObj['year'] = dateParts[2];
+	} else if (dateParts.length === 2) {
+		// Potential issue with parentheses e.g. (12th July 2000)
+		// Month
+		if (isNaN(parseInt(dateParts[0]))) {
+			dateObj['month'] = months.findIndex((m) => dateParts[0].trim().toLowerCase().includes(m.toLowerCase())) + 1;
+		} else {
+			dateObj['month'] = dateParts[0];
+		}
+		dateObj['year'] = dateParts[1];
+	} 
+	return dateObj;
+}
+
 const loadFacet = (facetId) => {
 	Array.from($('.pdfDivPoint') || []).forEach((p) => p.remove());
 
@@ -494,7 +525,9 @@ const loadFacet = (facetId) => {
 	};
 
 	dateSubmitButton.onclick = async () => {
-		saveFacet(facetId, [dateDay.value, dateMonth.value, dateYear.value]);
+		if(dateYear.value) {
+			saveFacet(facetId, [dateDay.value, dateMonth.value, dateYear.value]);
+		}
 	};
 
 	dateNAButton.onclick = async () => {
@@ -559,33 +592,10 @@ const loadFacet = (facetId) => {
 		let year = '';
 
 		if (dateSubmit.value) {
-			const dateTrimmed = dateSubmit.value.replace(/(?<!u)(st|nd|rd|th)|day|of|\./gi, '');
-			const dateParts = dateTrimmed.split(/\s+/g);
-
-			if (dateParts.length === 3) {
-				day = parseInt(dateParts[0]);
-				// Month
-				if (isNaN(parseInt(dateParts[1]))) {
-					month = months.findIndex((m) => dateParts[1].trim().toLowerCase().includes(m.toLowerCase())) + 1;
-				} else {
-					month = dateParts[1];
-				}
-
-				year = dateParts[2];
-			} else if (dateParts.length === 2) {
-				// Potential issue with parentheses e.g. (12th July 2000)
-				// Month
-				if (isNaN(parseInt(dateParts[0]))) {
-					month = months.findIndex((m) => dateParts[0].trim().toLowerCase().includes(m.toLowerCase())) + 1;
-				} else {
-					month = dateParts[0];
-				}
-
-				year = dateParts[1];
-			} else {
-				// Invalid date
-				return;
-			}
+			const dateResult = extractDate(dateSubmit.value)
+			day = dateResult.day;
+			month = dateResult.month;
+			year = dateResult.year;
 		}
 
 		dateDay.value = day;
@@ -642,12 +652,33 @@ const loadFacet = (facetId) => {
 		option.value = '';
 		option.text = '- Select -';
 		dateSubmit.appendChild(option);
-		dates.forEach((d) => {
+
+		// sort dates
+		const datesArray = [];
+		dates.forEach((textDate) => {
+			let dateResult = extractDate(textDate);
+				if(dateResult.day && dateResult.month && dateResult.year) {
+					datesArray.push({formatted: new Date(dateResult.year, dateResult.month-1, dateResult.day).toISOString(), text: textDate});
+				} 
+				if(!dateResult.day && dateResult.month && dateResult.year){
+					datesArray.push({formatted: new Date(dateResult.year, dateResult.month-1).toISOString(), text: textDate});
+				} 
+				if(!dateResult.day && !dateResult.month && dateResult.year){
+					datesArray.push({formatted: new Date(dateResult.year).toISOString(), text: textDate});
+				} 
+		});
+		
+		datesArray.sort(function(a, b) {
+			return new Date(a.formatted) - new Date(b.formatted);
+		});
+
+		datesArray.forEach((d) => {
 			let option = document.createElement('option');
-			option.value = d.trim();
-			option.text = d.trim();
+			option.value = d.text.trim();
+			option.text = d.text.trim();
 			dateSubmit.appendChild(option);
 		});
+
 	}
 
 	refreshFacetTable(facetId);
@@ -965,8 +996,8 @@ window.onload = async () => {
 
 		document.body.onmouseup = () => {
 			$pdfViewer.classList.remove('dragging');
-			document.body.onmousemove = () => {};
-			document.body.onmouseup = () => {};
+			document.body.onmousemove = () => { };
+			document.body.onmouseup = () => { };
 			setTimeout(() => {
 				isDraggingViewport = false;
 				lastPos = null;
