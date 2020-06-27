@@ -33,7 +33,7 @@
 			<nav>
 				<form id="selectCaseSetForm">
 					<fieldset>
-						<legend>Select Case Set <button type="button" id="caseSetSettingsButton">⚙ Settings</button></legend>
+						<legend>Select Case Set <% if(isAdmin) {%><button type="button" id="caseSetSettingsButton">⚙ Settings</button><%}%></legend>
 						<select id="selectCaseFormList"></select>
 						<button type="submit">Select</button>
 					</fieldset>

@@ -73,6 +73,7 @@ main h2 {
 
 #data-source {
 	display: flex;
+	align-items: center;
 }
 
 #search-category div {
@@ -143,8 +144,8 @@ main h2 {
 	justify-content: space-between;
 }
 
-#columns-columns > div {
-	width: 50%;
+#dynamic-columns {
+	width: 15vw;
 }
 
 .dynamic-fieldset {

@@ -125,7 +125,6 @@ main h2 span {
 	padding: 20px 20px 20px 0;
 	box-sizing: border-box;
 	transition: opacity 0.125s;
-	width: 28vw;
 }
 
 #caseFacets.loading {
@@ -166,8 +165,9 @@ main h2 span {
 #caseFacets table th,
 #caseFacets table td {
 	border: 1px solid #333;
-	font-size: 14px;
+	font-size: 12px;
 	padding: 5px;
+	white-space: nowrap;
 }
 
 #caseFacets tr.active td {

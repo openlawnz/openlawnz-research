@@ -874,9 +874,9 @@ window.onload = async () => {
 	//---------------------------------------
 	// Cases sidebar
 	//---------------------------------------
-
-	$caseSetSettingsButton.onclick = () => $caseSetSettingsDialog.showModal();
-
+	if($caseSetSettingsButton) {
+		$caseSetSettingsButton.onclick = () => $caseSetSettingsDialog.showModal();
+	}
 	$closeCaseSetSettings.onclick = () => $caseSetSettingsDialog.close();
 
 	cases.forEach((c) => {

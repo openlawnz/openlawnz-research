@@ -105,7 +105,7 @@ const init = async () => {
 		const params = new URLSearchParams();
 
 		params.set('category', $searchCategoryField.value);
-		params.set('caseSet', $searchCaseSetField.value)
+		params.set('caseSetId', $searchCaseSetField.value)
 		if ($searchStartDate.value) {
 			params.set('startDate', $searchStartDate.value);
 		}
@@ -181,9 +181,9 @@ const init = async () => {
 		$searchStartDate.value = initialParams.get('startDate');
 		$searchEndDate.value = initialParams.get('endDate');
 		
-		const caseSet = initialParams.get('caseSet');
-		if(caseSet) {
-			$searchCaseSetField.value = caseSet;
+		const caseSetId = initialParams.get('caseSetId');
+		if(caseSetId) {
+			$searchCaseSetField.value = caseSetId;
 		}
 
 		const fixedColumns = initialParams.get('fixedColumns');

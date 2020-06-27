@@ -11,9 +11,13 @@ if (!process.env.USERS) {
 	console.log('No users specified');
 	return;
 }
+
+const users = JSON.parse(process.env.USERS);
+const profiles = JSON.parse(process.env.PROFILES);
+
 app.use(
 	basicAuth({
-		users: JSON.parse(process.env.USERS),
+		users,
 		challenge: true,
 	})
 );
@@ -32,6 +36,21 @@ client.connect();
 app.use(bodyParser.json());
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+
+const adminOnly = (req, res, next) => {
+	if (!req.auth.user || !isAdmin(req.auth.user)) {
+		res.status(401).send('Unauthorized');
+	} else {
+		next();
+	}
+};
+
+const isAdmin = (user) => {
+	if (!profiles[user]) {
+		return false;
+	}
+	return profiles[user].role === 'admin';
+};
 
 /**
  * Home
@@ -63,10 +82,11 @@ app.use(express.static('public'));
 		res.render('human-refinement', {
 			pageKey: 'human-refinement',
 			pageTitle: 'Human Refinement',
+			isAdmin: isAdmin(req.auth.user),
 		});
 	});
 
-	app.post('/api/human-refinement/case-sets', async (req, res) => {
+	app.post('/api/human-refinement/case-sets', adminOnly, async (req, res) => {
 		if (!req.body.setSize) {
 			throw new Error('Missing set size');
 		}
@@ -136,8 +156,11 @@ app.use(express.static('public'));
 	});
 
 	app.get('/api/human-refinement/case-sets/:id', async (req, res) => {
-		const result = await client.query(`
-		SELECT * FROM funnel.random_case_sets WHERE id=$1`, [req.params.id]);
+		const result = await client.query(
+			`
+		SELECT * FROM funnel.random_case_sets WHERE id=$1`,
+			[req.params.id]
+		);
 		res.json(result.rows);
 	});
 
@@ -150,11 +173,14 @@ app.use(express.static('public'));
 		const pdfURLID = accsplit[1].split('.pdf')[0] + '-' + accsplit[0] + '.pdf.json';
 
 		const [caseData, allFacets, userValues] = await Promise.all([
-			client.query(`
+			client.query(
+				`
 				SELECT id, case_name 
 				FROM main.cases 
 				WHERE id = $1
-			`, [caseId]),
+			`,
+				[caseId]
+			),
 			client.query(
 				`
 		  SELECT 
@@ -483,7 +509,7 @@ app.use(express.static('public'));
 
 					case 'judge':
 						s.push(judgeQuery);
-						break;	
+						break;
 				}
 			});
 		}
@@ -507,16 +533,20 @@ app.use(express.static('public'));
 		}
 
 		let dateRangeValues = [];
-		let dateRangeStr = '';
+		let whereConditions = [];
 
 		if (req.query.startDate) {
 			dateRangeValues.push(req.query.startDate);
-			dateRangeStr += 'WHERE m.case_date >= $1';
+			whereConditions.push('m.case_date >= $1');
 		}
 		if (req.query.endDate) {
 			dateRangeValues.push(req.query.endDate);
-			const joiner = req.query.startDate ? ' AND' : 'WHERE ';
-			dateRangeStr += `${joiner} m.case_date < $2`;
+			whereConditions.push('m.case_date < $2');
+		}
+
+		if(req.query.caseSetId) {
+			const case_set = await client.query(`SELECT * FROM funnel.random_case_sets WHERE id = $1`, [req.query.caseSetId])
+			whereConditions.push(`m.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
 		}
 
 		let q = `
@@ -524,7 +554,7 @@ app.use(express.static('public'));
 			SELECT
 				${s.join(',')}
 			FROM main.cases as m
-			${dateRangeStr}
+			${whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : ""}
 				
 		) as ol ${lateralJoins.map((l) => l.sql).join('\n')}`;
 
@@ -532,7 +562,7 @@ app.use(express.static('public'));
 			q += ' LIMIT 100';
 		}
 		let a;
-		if (dateRangeStr === '') {
+		if (dateRangeValues.length === 0) {
 			a = await client.query(q);
 		} else {
 			a = await client.query(q, dateRangeValues);
