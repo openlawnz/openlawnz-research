@@ -55,6 +55,10 @@
 	}
 }
 
+#facetHeadingWrap {
+	max-width: 595px;
+}
+
 #wrap nav a {
 	color: #3f7578;
 }
