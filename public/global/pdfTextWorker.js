@@ -155,7 +155,7 @@ onmessage = function (e) {
 	const { facetData, caseData } = JSON.parse(e.data);
 	const { id, type, searchQuery, options: words } = facetData;
 
-	const searchBoundingBoxes = id === 'search' && searchQuery.length > 0 && wordSearch(caseData, searchQuery);
+	const searchBoundingBoxes = type === 'search' && searchQuery.length > 0 && wordSearch(caseData, searchQuery);
 	const booleanBoundingBoxes = type === 'boolean' && booleanSearch(caseData, words);
 	const dateBoundingBoxes = type === 'date' && dateSearch(caseData);
 	const boundingBoxes = searchBoundingBoxes || booleanBoundingBoxes || dateBoundingBoxes;

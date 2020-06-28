@@ -151,6 +151,7 @@ const search = async (searchQuery, caseData) => {
 		const payload = {
 			facetData: {
 				id: 'search',
+				type: 'search',
 				searchQuery,
 			},
 			caseData,
@@ -486,7 +487,7 @@ const extractDate = (dateString) => {
 			dateObj['month'] = dateParts[0];
 		}
 		dateObj['year'] = dateParts[1];
-	} 
+	}
 	return dateObj;
 }
 
@@ -569,7 +570,7 @@ const loadFacet = (facetId) => {
 		facet.completedCount = parseInt(facet.completedCount) + 1;
 		let nextFacetId;
 		const nextFacet = $('tr.active + tr', $caseFacetsTableBody);
-		
+
 		if(nextFacet) {
 			nextFacetId = nextFacet.dataset.facet;
 		}
@@ -659,15 +660,15 @@ const loadFacet = (facetId) => {
 			let dateResult = extractDate(textDate);
 				if(dateResult.day && dateResult.month && dateResult.year) {
 					datesArray.push({formatted: new Date(dateResult.year, dateResult.month-1, dateResult.day).toISOString(), text: textDate});
-				} 
+				}
 				if(!dateResult.day && dateResult.month && dateResult.year){
 					datesArray.push({formatted: new Date(dateResult.year, dateResult.month-1).toISOString(), text: textDate});
-				} 
+				}
 				if(!dateResult.day && !dateResult.month && dateResult.year){
 					datesArray.push({formatted: new Date(dateResult.year).toISOString(), text: textDate});
-				} 
+				}
 		});
-		
+
 		datesArray.sort(function(a, b) {
 			return new Date(a.formatted) - new Date(b.formatted);
 		});
