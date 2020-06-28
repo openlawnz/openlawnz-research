@@ -66,6 +66,17 @@ describe('pdfTextWorker', () => {
 			expect(booleanSearch(caseData, words)).toEqual(expected);
 		});
 
+		it('Should find no bounding boxes matching the word: the district cour (matching the whole word)', () => {
+			const words = [
+				{
+					value: 'the district cour',
+					wholeWord: true,
+				},
+			];
+			const expected = [[], [], []];
+			expect(booleanSearch(caseData, words)).toEqual(expected);
+		});
+
 		it('Should find no bounding boxes for word: blah', () => {
 			const words = [
 				{
