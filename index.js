@@ -52,6 +52,21 @@ const isAdmin = (user) => {
 	return profiles[user].role === 'admin';
 };
 
+const adminOrUserOnly = (req, res, next) => {
+	if (!req.auth.user || !isAdminOrUser(req.auth.user)) {
+		res.status(401).send('Unauthorized');
+	} else {
+		next();
+	}
+};
+
+const isAdminOrUser = (user) => {
+	if (!profiles[user]) {
+		return false;
+	}
+	return profiles[user].role === 'admin' || profiles[user].role === 'user';
+}
+
 /**
  * Home
  */
@@ -99,6 +114,7 @@ const isAdmin = (user) => {
 			pageKey: 'human-refinement',
 			pageTitle: 'Human Refinement',
 			isAdmin: isAdmin(req.auth.user),
+			isAdminOrUser: isAdminOrUser(req.auth.user)
 		});
 	});
 
@@ -301,7 +317,7 @@ const isAdmin = (user) => {
 		res.json(response);
 	});
 
-	app.post('/api/human-refinement/cases/:caseId', async (req, res) => {
+	app.post('/api/human-refinement/cases/:caseId', adminOrUserOnly, async (req, res) => {
 		const caseId = req.params.caseId;
 		const metadataId = uuidv4();
 		try {
@@ -569,7 +585,7 @@ const isAdmin = (user) => {
 				
 		) as ol ${lateralJoins.map((l) => l.sql).join('\n')}`;
 
-		if (req.query.preview) {
+		if (req.query.preview || !isAdminOrUser(req.auth.user)) {
 			q += ' LIMIT 100';
 		}
 		let a;

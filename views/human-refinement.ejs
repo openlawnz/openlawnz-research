@@ -101,23 +101,24 @@
 										</div>
 									</div>
 
-									<button id="dateSubmitButton">Submit</button>
-									<button id="dateNAButton">N/A</button>
-									<button id="dateUnsureButton">Unsure</button>
+									<button id="dateSubmitButton" <% if(!isAdminOrUser) {%>disabled<%}%>>Submit</button>
+									<button id="dateNAButton" <% if(!isAdminOrUser) {%>disabled<%}%>>N/A</button>
+									<button id="dateUnsureButton" <% if(!isAdminOrUser) {%>disabled<%}%>>Unsure</button>
 								</div>
 							</div>
 
 							<div id="submitBoolean">
 								<div>
-									<button id="submitBooleanYes">✔ Yes</button>
-									<button id="submitBooleanNo">✘ No</button>
+									<button id="submitBooleanYes" <% if(!isAdminOrUser) {%>disabled<%}%>>✔ Yes</button>
+									<button id="submitBooleanNo" <% if(!isAdminOrUser) {%>disabled<%}%>>✘ No</button>
 								</div>
 								<div>
-									<button id="submitBooleanNA">N/A</button>
-									<button id="submitBooleanUnsure">Unsure</button>
+									<button id="submitBooleanNA" <% if(!isAdminOrUser) {%>disabled<%}%>>N/A</button>
+									<button id="submitBooleanUnsure" <% if(!isAdminOrUser) {%>disabled<%}%>>Unsure</button>
 								</div>
 							</div>
 						</div>
+						
 						<div id="pdfNavigation">
 							<button id="pdfPrev">⬆</button>
 							<button id="pdfNext">⬇</button>
