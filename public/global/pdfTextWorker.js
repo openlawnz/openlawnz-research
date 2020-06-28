@@ -1,119 +1,79 @@
-// This code needs cleaning up
-
 const dateRegex = /(((((31)?(?!\s+(Feb(ruary)?|Apr(il)?|June?|(Sep(?=\b|t)t?|Nov)(ember)?)))|((30|29)?(?!\s+Feb(ruary)?))|((29)?(?=\s+Feb(ruary)?\s+(((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00)))))|(0?[1-9])|1\d|2[0-8])\s+(Jan(uary)?|Feb(ruary)?|Ma(r(ch)?|y)|Apr(il)?|Ju((ly?)|(ne?))|Aug(ust)?|Oct(ober)?|(Sep(?=\b|t)t?|Nov|Dec)(ember)?),?\s+((1[6-9]|[2-9]\d)\d{2}))|(\s(\d{1,2}(\s+)?(st|nd|rd|th)?)\s+(?:day\s+of)?(?:of)?(\s+)?(\w*)(\s+)?(\d{4})))/gim;
 
-const textExists = (text, findText, loose, wholeWord) => {
-	if (loose) {
-		return text.toLowerCase().indexOf(findText.toLowerCase()) !== -1;
-	} else if (!wholeWord) {
-		return text.toLowerCase().startsWith(findText.toLowerCase());
-	} else {
-		return text.toLowerCase().trim() === findText.toLowerCase().trim();
-	}
-};
+const wordSearch = (caseData, query, shouldMatchWholeWord = false) => {
+	const boundingBoxes = [];
+	const _query = query.replace(/\s\s+/g, ' ').toLowerCase().trim();
+	const matcher = RegExp(`\\b(\\w*${_query}\\w*)\\b`, 'g');
 
-const wordSearch = (caseData, query) => {
-	const allPagesBoundingBoxes = [];
+	caseData.forEach((page) => {
+		const currentPage = [];
+		const wordsOnPage = page.lines
+			.map((line) =>
+				line.words.map((word) => {
+					const { text, ...boundingBoxInfo } = word;
+					return {
+						text: text
+							.toLowerCase()
+							.replace(/[^\w\s]|_/g, '')
+							.trim(),
+						...boundingBoxInfo,
+					};
+				})
+			)
+			.flat();
 
-	caseData.forEach((c) => {
-		let currentPage = [];
-		let allWords = [];
+		const pageContent = wordsOnPage.reduceRight((content, word) => `${word.text} ${content}`, '').trim();
+		const wordMatches = pageContent.match(matcher);
+		const _wordMatches = wordMatches && wordMatches.map((wordMatch) => wordMatch.split(' '));
 
-		c.lines.forEach((l) => {
-			allWords = allWords.concat(l.words);
-		});
+		if (!_wordMatches) {
+			boundingBoxes.push(currentPage);
+			return;
+		}
 
-		let amArr = query.split(/\s+/g).filter((f) => f !== '');
+		let matchedWordIndex = 0;
+		for (let word = 0; word < wordsOnPage.length; word++) {
+			const { text, boundingBox } = wordsOnPage[word];
+			const matchedWords = _wordMatches[matchedWordIndex];
 
-		let len = allWords.length;
+			if (!matchedWords) {
+				break;
+			}
 
-		let currentSearchIndex = 0;
-		let composition = [];
-		let compositionWords = [];
+			const matchesWholeWord = shouldMatchWholeWord ? text === _query : true;
 
-		for (let i = 0; i < len; i++) {
-			const word = allWords.shift();
-			const wordText = word.text;
-			let searchAhead = true;
-
-			if (wordText.toLowerCase().trim().startsWith(amArr[currentSearchIndex].toLowerCase().trim())) {
-				composition.push(amArr[currentSearchIndex]);
-				compositionWords.push(word);
-
-				if (amArr.length == 1) {
-					if (composition.join('_') == amArr.join('_')) {
-						compositionWords.forEach((w) => {
-							currentPage.push({
-								boxes: [w.boundingBox.map((b) => b * 72)],
-							});
-						});
-
-						found = true;
-						searchAhead = false;
+			// Multiple word matching
+			if (matchedWords.length > 1 && text === matchedWords[0]) {
+				let multipleWordBoxes = [];
+				for (let multipleWordIndex = 0; multipleWordIndex < matchedWords.length; multipleWordIndex++) {
+					const { text: nextWordText, boundingBox: nextWordBoundingBox } = wordsOnPage[word + multipleWordIndex];
+					if (nextWordText !== matchedWords[multipleWordIndex]) {
+						multipleWordBoxes = [];
+						break;
 					}
-				} else {
-					while (searchAhead) {
-						currentSearchIndex++;
-
-						if (
-							allWords[currentSearchIndex - 1] &&
-							amArr[currentSearchIndex] &&
-							allWords[currentSearchIndex - 1].text.toLowerCase().includes(amArr[currentSearchIndex].toLowerCase())
-						) {
-							composition.push(amArr[currentSearchIndex]);
-							compositionWords.push(allWords[currentSearchIndex - 1]);
-							if (composition.join('_') == amArr.join('_')) {
-								currentPage.push({
-									boxes: compositionWords.map((w) => w.boundingBox.map((b) => b * 72)),
-								});
-
-								found = true;
-								searchAhead = false;
-							}
-						} else {
-							currentSearchIndex = 0;
-							composition = [];
-							compositionWords = [];
-							searchAhead = false;
-						}
-					}
+					multipleWordBoxes.push(nextWordBoundingBox.map((b) => b * 72));
 				}
+				multipleWordBoxes.length > 0 && currentPage.push({ boxes: multipleWordBoxes });
+				multipleWordBoxes.length > 0 && matchedWordIndex++;
+			}
+
+			// Single word matching
+			if (matchedWords.length === 1 && text === matchedWords[0] && matchesWholeWord) {
+				currentPage.push({ boxes: [boundingBox.map((b) => b * 72)] });
+				matchedWordIndex++;
 			}
 		}
 
-		allPagesBoundingBoxes.push(currentPage);
+		boundingBoxes.push(currentPage);
 	});
 
-	return allPagesBoundingBoxes;
+	return boundingBoxes;
 };
 
-const booleanSearch = (caseData, facetData) => {
-	const allPagesBoundingBoxes = [];
-
-	caseData.forEach((c) => {
-		let currentPage = [];
-
-		c.lines.forEach((l) => {
-			// Find if it exists in the line text
-			// If it does, look in the words
-
-			facetData.options.forEach((f) => {
-				if (textExists(l.text, f.value, true)) {
-					l.words.forEach((w) => {
-						if (textExists(w.text, f.value, false, f.wholeWord)) {
-							currentPage.push({
-								boxes: [w.boundingBox.map((b) => b * 72)],
-							});
-						}
-					});
-				}
-			});
-		});
-
-		allPagesBoundingBoxes.push(currentPage);
-	});
-
-	return allPagesBoundingBoxes;
+const transposeArray = (array) => array[0].map((_, colIndex) => array.map((row) => row[colIndex]));
+const booleanSearch = (caseData, words) => {
+	const pageBoundingBoxesByWord = words.map(({ value, wholeWord }) => wordSearch(caseData, value, wholeWord));
+	return transposeArray(pageBoundingBoxesByWord).map((boundingBoxes) => boundingBoxes.flat());
 };
 
 const dateSearch = (caseData) => {
@@ -193,23 +153,18 @@ const dateSearch = (caseData) => {
 
 onmessage = function (e) {
 	const { facetData, caseData } = JSON.parse(e.data);
+	const { id, type, searchQuery, options: words } = facetData;
 
-	let boundingBoxes;
+	const searchBoundingBoxes = type === 'search' && searchQuery.length > 0 && wordSearch(caseData, searchQuery);
+	const booleanBoundingBoxes = type === 'boolean' && booleanSearch(caseData, words);
+	const dateBoundingBoxes = type === 'date' && dateSearch(caseData);
+	const boundingBoxes = searchBoundingBoxes || booleanBoundingBoxes || dateBoundingBoxes;
 
-	if (facetData.id === 'search' && facetData.searchQuery.length > 0) {
-		boundingBoxes = wordSearch(caseData, facetData.searchQuery);
-	} else if (facetData.type === 'boolean') {
-		boundingBoxes = booleanSearch(caseData, facetData);
-	} else if (facetData.type === 'date') {
-		boundingBoxes = dateSearch(caseData);
-	} else {
-		throw new Error('Unknown facet type');
-	}
-
-	postMessage({
-		id: facetData.id,
-		boundingBoxes,
-	});
+	boundingBoxes &&
+		postMessage({
+			id,
+			boundingBoxes,
+		});
 };
 
 // For unit testing
