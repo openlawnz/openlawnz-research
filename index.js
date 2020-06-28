@@ -63,6 +63,22 @@ const isAdmin = (user) => {
 			pageTitle: 'Home',
 		});
 	});
+
+	app.get('/api/home/cases-total', async (req, res) => {
+		const result = await client.query(`
+		SELECT COUNT(*) from main.category_to_cases where category_id = 'acc'`);
+		res.json(result.rows);
+	});
+
+	app.get('/api/home/random-case-sets', async (req, res) => {
+		const result = await client.query(`
+		SELECT id
+		FROM funnel.random_case_sets
+		ORDER BY random()
+		LIMIT 1`);
+		res.json(result.rows);
+	});
+
 })();
 
 /**
@@ -167,11 +183,6 @@ const isAdmin = (user) => {
 	app.get('/api/human-refinement/cases/:caseId', async (req, res) => {
 		const caseId = req.params.caseId;
 
-		const underscore = caseId.split('_')[2];
-		const accsplit = underscore.split('NZACC');
-
-		const pdfURLID = accsplit[1].split('.pdf')[0] + '-' + accsplit[0] + '.pdf.json';
-
 		const [caseData, allFacets, userValues] = await Promise.all([
 			client.query(
 				`
@@ -231,7 +242,7 @@ const isAdmin = (user) => {
 			caseMeta: {
 				id: caseId,
 				caseName: caseData.rows[0].case_name,
-				pdfJSON: `${process.env.PDF_JSON_BASE_PATH}${pdfURLID}`,
+				pdfJSON: `${process.env.PDF_JSON_BASE_PATH}${caseId}`,
 				pdfURL: `${process.env.PDF_BASE_PATH}${caseId}`,
 			},
 		};

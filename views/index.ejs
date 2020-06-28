@@ -5,14 +5,88 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>OpenLaw NZ : <%= pageTitle %></title>
 		<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
-		<link rel="stylesheet" href="global/index.css" />
+		<link rel="stylesheet" href="/global/index.css" />
+		<link rel="stylesheet" href="/home/index.css" />
+		<script src="/home/index.js"></script>
 	</head>
 	<body>
-        
-        <%- include('partials/header.ejs', { pageKey, pageTitle }) %>
-		
-		<div id="wrap">
-            Home
+		<%- include('partials/header.ejs', { pageKey, pageTitle }) %>
+
+		<div id="wrap" class="loading">
+			<div id="humanRefinementOptions">
+				<div id="accHumanRefinement" class="refinementArea">
+					<h1>
+						<img src="/home/acc-logo.svg" alt="ACC Logo" />
+					</h1>
+
+					<div class="refinementAreaBody">
+						<p>Refinement Lead: Tom Barraclough</p>
+						<p>
+							Review ACC district court decisions and help create data that can be analysed to generate insights about
+							access to justice and ACC disputes.
+						</p>
+
+						<table>
+							<thead>
+								<tr>
+									<th>
+										Cases Total
+									</th>
+									<th>
+										% Processed
+									</th>
+									<th>
+										Leaderboard
+									</th>
+								</tr>
+								<tr>
+									<td id="accCasesTotal"></td>
+									<td id="accCasesProcessed"></td>
+									<td id="accLeaderboard">-</td>
+								</tr>
+							</thead>
+						</table>
+
+						<button id="accGetStarted" class="getStarted">Get started &raquo;</button>
+					</div>
+
+					<dialog id="accDialog">
+						<button class="closeDialog">Close</button>
+						<p>TBC dialog text to read about how it works and how to code things</p>
+						<button class="acceptButton">I have read and understand the conditions</button>
+					</dialog>
+				</div>
+
+				<div id="tenancyHumanRefinement" class="refinementArea">
+					<h1><img src="/home/tenancy-logo.svg" alt="Tenancy Tribunal Logo" /></h1>
+					<div class="refinementAreaBody">
+						<p>Refinement Lead: TBC</p>
+						<p>Coming soon!</p>
+						<table>
+							<thead>
+								<tr>
+									<th>
+										Cases Total
+									</th>
+									<th>
+										% Processed
+									</th>
+									<th>
+										Leaderboard
+									</th>
+								</tr>
+								<tr>
+									<td id="tenancyCasesTotal">-</td>
+									<td id="tenancyCasesProcessed">-</td>
+									<td id="tenancyLeaderboard">-</td>
+								</tr>
+							</thead>
+						</table>
+
+						<button id="tenancyGetStarted" class="getStarted" disabled>Get started &raquo;</button>
+					</div>
+				</div>
+			</div>
 		</div>
 	</body>
 </html>

@@ -11,6 +11,14 @@ body {
 	background: #fdfbf045;
 }
 
+@media (prefers-color-scheme: dark) {
+	/*
+	body {
+		background: #bbb;
+	}
+	*/
+}
+
 #wrap.loading {
 	position: relative;
 }
