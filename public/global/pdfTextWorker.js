@@ -1,5 +1,7 @@
 const dateRegex = /(((((31)?(?!\s+(Feb(ruary)?|Apr(il)?|June?|(Sep(?=\b|t)t?|Nov)(ember)?)))|((30|29)?(?!\s+Feb(ruary)?))|((29)?(?=\s+Feb(ruary)?\s+(((1[6-9]|[2-9]\d)(0[48]|[2468][048]|[13579][26])|((16|[2468][048]|[3579][26])00)))))|(0?[1-9])|1\d|2[0-8])\s+(Jan(uary)?|Feb(ruary)?|Ma(r(ch)?|y)|Apr(il)?|Ju((ly?)|(ne?))|Aug(ust)?|Oct(ober)?|(Sep(?=\b|t)t?|Nov|Dec)(ember)?),?\s+((1[6-9]|[2-9]\d)\d{2}))|(\s(\d{1,2}(\s+)?(st|nd|rd|th)?)\s+(?:day\s+of)?(?:of)?(\s+)?(\w*)(\s+)?(\d{4})))/gim;
 
+const genSentence = (words = []) => words.reduceRight((content, word) => `${word.text} ${content}`, '').trim();
+
 const wordSearch = (caseData, query, shouldMatchWholeWord = false) => {
 	const boundingBoxes = [];
 	const _query = query.replace(/\s\s+/g, ' ').toLowerCase().trim();
@@ -22,7 +24,7 @@ const wordSearch = (caseData, query, shouldMatchWholeWord = false) => {
 			)
 			.flat();
 
-		const pageContent = wordsOnPage.reduceRight((content, word) => `${word.text} ${content}`, '').trim();
+		const pageContent = genSentence(wordsOnPage);
 		const wordMatches = pageContent.match(matcher);
 		const _wordMatches = wordMatches && wordMatches.map((wordMatch) => wordMatch.split(' '));
 
@@ -40,24 +42,29 @@ const wordSearch = (caseData, query, shouldMatchWholeWord = false) => {
 				break;
 			}
 
-			const matchesWholeWord = shouldMatchWholeWord ? text === _query : true;
 
 			// Multiple word matching
 			if (matchedWords.length > 1 && text === matchedWords[0]) {
-				let multipleWordBoxes = [];
+				let multipleWords = [];
 				for (let multipleWordIndex = 0; multipleWordIndex < matchedWords.length; multipleWordIndex++) {
 					const { text: nextWordText, boundingBox: nextWordBoundingBox } = wordsOnPage[word + multipleWordIndex];
 					if (nextWordText !== matchedWords[multipleWordIndex]) {
-						multipleWordBoxes = [];
+						multipleWords = [];
 						break;
 					}
-					multipleWordBoxes.push(nextWordBoundingBox.map((b) => b * 72));
+					multipleWords.push({ text: nextWordText, box: nextWordBoundingBox.map((b) => b * 72) });
 				}
-				multipleWordBoxes.length > 0 && currentPage.push({ boxes: multipleWordBoxes });
-				multipleWordBoxes.length > 0 && matchedWordIndex++;
+
+				const matchesWholeWord = shouldMatchWholeWord ? genSentence(multipleWords) === _query : true;
+				if (multipleWords.length > 0 && matchesWholeWord) {
+					currentPage.push({ boxes: multipleWords.map(({ box }) => box) });
+					matchedWordIndex++;
+				}
+				continue;
 			}
 
 			// Single word matching
+			const matchesWholeWord = shouldMatchWholeWord ? text === _query : true;
 			if (matchedWords.length === 1 && text === matchedWords[0] && matchesWholeWord) {
 				currentPage.push({ boxes: [boundingBox.map((b) => b * 72)] });
 				matchedWordIndex++;
