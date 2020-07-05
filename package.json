@@ -21,5 +21,15 @@
     "dotenv": "^8.2.0",
     "jest": "^26.0.1",
     "nodemon": "^2.0.4"
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "statements": 55,
+        "branches": 56.86,
+        "functions": 64,
+        "lines": 51.46
+      }
+    }
   }
 }

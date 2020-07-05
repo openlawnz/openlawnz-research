@@ -380,6 +380,11 @@ const loadCase = async (caseId) => {
 		},
 	});
 
+	// Reset search params
+	$pdfSearchInput.value = '';
+	$pdfSearchInput.dataset.value = '';
+	Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+
 	isLoading = false;
 };
 
@@ -774,15 +779,19 @@ window.onload = async () => {
 
 	let currentSearchPos = -1;
 
-	$pdfSearchButton.onclick = () => {
+	const activateSearch = async () => {
+		pdfSearchInput.value = pdfSearchInput.dataset.value ? pdfSearchInput.dataset.value : '';
 		$pdfSearchBar.classList.toggle('active');
 		$pdfSearchInput.focus();
-	};
+		await refreshSearchResults();
+	}
 
-	window.onkeydown = (event) => {
-		if ((event.ctrlKey || event.metaKey) && String.fromCharCode(event.which).toLowerCase() == 'f') {
-			$pdfSearchBar.classList.toggle('active');
-			$pdfSearchInput.focus();
+	$pdfSearchButton.onclick = activateSearch;
+
+	// Listening for ctrl + f
+	window.onkeydown = async (e) => {
+		if ((e.ctrlKey || e.metaKey) && String.fromCharCode(e.which).toLowerCase() == 'f') {
+			await activateSearch();
 		}
 	};
 
@@ -811,48 +820,53 @@ window.onload = async () => {
 
 	let searchDebounce;
 
+	$pdfSearchInput.onsearch = (e) => {
+		if (!e.target.value) {
+		  $pdfSearchBar.classList.toggle('active');
+			$pdfSearchInput.blur();
+			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+		}
+	}
+
+	const refreshSearchResults = async () => {
+		Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+
+		if (!$pdfSearchInput.value) {
+			return;
+		}
+
+		const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
+		searchResultsWraps = processPages(pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint');
+
+		searchResultsWraps.forEach((pointWrap) => {
+			pointWrap.points.forEach((el) => {
+				el.style.boxSizing = `content-box`;
+				el.style.paddingBottom = '2px';
+				el.style.paddingTop = '2px';
+				el.style.paddingLeft = '2px';
+				el.style.paddingRight = '2px';
+				el.style.transform = `translate(-2px, -2px)`;
+				el.style.backgroundColor = `#0000ff7a`;
+			});
+		});
+
+		const pdfMinimapElsWraps = processPages(
+			$pdfMinimapInner,
+			searchResultsWithBoundingBoxes.boundingBoxes,
+			MINIMAP_SCALE,
+			'searchDivPoint'
+		);
+		pdfMinimapElsWraps.forEach((pointWrap) => {
+			pointWrap.points.forEach((el) => {
+				el.style.backgroundColor = `blue`;
+			});
+		});
+	}
+
 	$pdfSearchInput.onkeyup = async (e) => {
 		clearTimeout(searchDebounce);
-
-		// if(e.keyCode == 27) {
-		//   $pdfSearchInput.classList.toggle('active');
-		//   $pdfSearchInput.blur();
-		// }
-
-		searchDebounce = setTimeout(async () => {
-			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
-
-			if (!$pdfSearchInput.value) {
-				return;
-			}
-
-			const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
-			searchResultsWraps = processPages(pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint');
-
-			searchResultsWraps.forEach((pointWrap) => {
-				pointWrap.points.forEach((el) => {
-					el.style.boxSizing = `content-box`;
-					el.style.paddingBottom = '2px';
-					el.style.paddingTop = '2px';
-					el.style.paddingLeft = '2px';
-					el.style.paddingRight = '2px';
-					el.style.transform = `translate(-2px, -2px)`;
-					el.style.backgroundColor = `#0000ff7a`;
-				});
-			});
-
-			const pdfMinimapElsWraps = processPages(
-				$pdfMinimapInner,
-				searchResultsWithBoundingBoxes.boundingBoxes,
-				MINIMAP_SCALE,
-				'searchDivPoint'
-			);
-			pdfMinimapElsWraps.forEach((pointWrap) => {
-				pointWrap.points.forEach((el) => {
-					el.style.backgroundColor = `blue`;
-				});
-			});
-		}, 500);
+		e.target.dataset.value = e.target.value;
+		searchDebounce = setTimeout(refreshSearchResults, 500);
 
 		if (e.keyCode === 13) {
 			pdfSearchNext.click();
