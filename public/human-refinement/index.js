@@ -383,6 +383,8 @@ const loadCase = async (caseId) => {
 	// Reset search params
 	$pdfSearchInput.value = '';
 	$pdfSearchInput.dataset.value = '';
+	$pdfSearchBar.classList.toggle('active');
+	$pdfSearchInput.blur();
 	Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
 
 	isLoading = false;
