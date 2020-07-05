@@ -383,7 +383,7 @@ const loadCase = async (caseId) => {
 	// Reset search params
 	$pdfSearchInput.value = '';
 	$pdfSearchInput.dataset.value = '';
-	$pdfSearchBar.classList.toggle('active');
+	$pdfSearchBar.classList.remove('active');
 	$pdfSearchInput.blur();
 	Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
 
@@ -783,7 +783,7 @@ window.onload = async () => {
 
 	const activateSearch = async () => {
 		pdfSearchInput.value = pdfSearchInput.dataset.value ? pdfSearchInput.dataset.value : '';
-		$pdfSearchBar.classList.toggle('active');
+		$pdfSearchBar.classList.add('active');
 		$pdfSearchInput.focus();
 		await refreshSearchResults();
 	}
@@ -824,7 +824,7 @@ window.onload = async () => {
 
 	$pdfSearchInput.onsearch = (e) => {
 		if (!e.target.value) {
-		  $pdfSearchBar.classList.toggle('active');
+		  $pdfSearchBar.classList.remove('active');
 			$pdfSearchInput.blur();
 			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
 		}
