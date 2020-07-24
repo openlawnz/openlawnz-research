@@ -5,17 +5,22 @@ class PDFController {
     this.loadingPercentage = 0;
 
     // Current PDF Document
-    this.doc = null;
-    this.pageOffsets = [];
-    this.minimapPageOffsets = [];
+    this.pdf = {
+      document: null,
+      pageOffsets: [],
+      element
+    }
 
-    // PDF & Minimap Elements
-    this.pdfElement = element;
-    this.minimapElement = minimapElement;
+    // Minimap
+    this.minimap = {
+      pageOffsets: [],
+      element: minimapElement
+    }
   }
 
   async reset() {
-    this.doc = null;
+    this.pdf = {};
+    this.minimap = {};
     this.loading = true;
     this.loadingPercentage = 0;
   }
@@ -31,22 +36,18 @@ class PDFController {
     this.loading = false;
   }
 
-  _calculatePageOffset(pageOffsets, pageNumber, pageHeight) {
-    return pageNumber > 1 ? pageOffsets[pageNumber - 2] + pageHeight : 0;
-  }
-
   async _loadPage(pageNumber, minimapScale) {
     const page = await this.doc.getPage(pageNumber);
 
     const viewport = page.getViewport({ scale: 1.0 });
     const minimapViewport = page.getViewport({ scale: minimapScale });
 
-    const pageHeight = this._renderPageCanvas(this.pdfElement, viewport, page);
-    const minimapPageHeight = this._renderPageCanvas(this.minimapElement, minimapViewport, page);
-    const pageOffset = this._calculatePageOffset(this.pageOffsets, pageNumber, pageHeight);
-    const minimapPageOffset = this._calculatePageOffset(this.minimapPageOffsets, pageNumber, minimapPageHeight);
-    this.pageOffsets.push(pageOffset);
-    this.minimapPageOffsets.push(minimapPageOffset);
+    const pageHeight = this._renderPageCanvas(this.pdf.element, viewport, page);
+    const minimapPageHeight = this._renderPageCanvas(this.minimap.element, minimapViewport, page);
+    const pageOffset = this._calculatePageOffset(this.pdf.pageOffsets, pageNumber, pageHeight);
+    const minimapPageOffset = this._calculatePageOffset(this.minimap.pageOffsets, pageNumber, minimapPageHeight);
+    this.pdf.pageOffsets.push(pageOffset);
+    this.minimap.pageOffsets.push(minimapPageOffset);
   }
 
   _renderPageCanvas(parentElement, viewport, page) {
@@ -63,6 +64,10 @@ class PDFController {
       viewport,
     });
     return canvas.height;
+  }
+
+  _calculatePageOffset(pageOffsets, pageNumber, pageHeight) {
+    return pageNumber > 1 ? pageOffsets[pageNumber - 2] + pageHeight : 0;
   }
 
   _setLoadingPercentage(progressEvent) {

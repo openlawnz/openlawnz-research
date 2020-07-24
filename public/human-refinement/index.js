@@ -549,7 +549,7 @@ const loadFacet = (facetId) => {
 
 	const pages = facet.type == 'boolean' ? booleanBoundingBoxes[facetId] : dateBoundingBoxes.boundingBoxes;
 
-	const pdfViewWraps = processPages($pdfViewer, pages, 1.0, 'pdfDivPoint', pdfController.pageOffsets);
+	const pdfViewWraps = processPages($pdfViewer, pages, 1.0, 'pdfDivPoint', pdfController.pdf.pageOffsets);
 
 	const dates = [];
 
@@ -578,7 +578,7 @@ const loadFacet = (facetId) => {
 		});
 	});
 
-	const pdfMinimapElsWraps = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint', pdfController.minimapPageOffsets);
+	const pdfMinimapElsWraps = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint', pdfController.minimap.pageOffsets);
 
 	pdfMinimapElsWraps.forEach((pointWrap) => {
 		pointWrap.points.forEach((el) => {
@@ -651,7 +651,6 @@ const loadFacet = (facetId) => {
 		goToPoint(currentSelectedPos + 1);
 	};
 
-	//goToPoint(currentSelectedPos);
 	$pdfViewer.scrollTop = 0;
 };
 
@@ -774,7 +773,7 @@ window.onload = async () => {
 			}
 
 			const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
-		searchResultsWraps = processPages($pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint', pdfController.pageOffsets);
+		searchResultsWraps = processPages($pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint', pdfController.pdf.pageOffsets);
 
 			searchResultsWraps.forEach((pointWrap) => {
 				pointWrap.points.forEach((el) => {
@@ -793,7 +792,7 @@ window.onload = async () => {
 				searchResultsWithBoundingBoxes.boundingBoxes,
 				MINIMAP_SCALE,
 			'searchDivPoint',
-			pdfController.minimapPageOffsets
+			pdfController.minimap.pageOffsets
 			);
 			pdfMinimapElsWraps.forEach((pointWrap) => {
 				pointWrap.points.forEach((el) => {
@@ -936,6 +935,7 @@ window.onload = async () => {
 	viewportNavigator.onmousedown = () => {
 		isDraggingViewport = true;
 		$pdfViewer.classList.add('dragging');
+    document.body.style["user-select"] = "none";
 
 		document.body.onmousemove = (e) => {
 			if (lastPos) {
@@ -951,6 +951,7 @@ window.onload = async () => {
 
 		document.body.onmouseup = () => {
 			$pdfViewer.classList.remove('dragging');
+      document.body.style["user-select"] = "auto";
 			document.body.onmousemove = () => { };
 			document.body.onmouseup = () => { };
 			setTimeout(() => {
