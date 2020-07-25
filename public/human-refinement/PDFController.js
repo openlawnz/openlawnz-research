@@ -1,5 +1,5 @@
 class PDFController {
-  constructor(element, minimapElement) {
+  constructor(element, minimapElement, searchBarElement, searchInputElement) {
     // Loading variables
     this.loading = true;
     this.loadingPercentage = 0;
@@ -15,6 +15,14 @@ class PDFController {
     this.minimap = {
       pageOffsets: [],
       element: minimapElement
+    }
+
+    // Search
+    this.search = {
+      elements: {
+        bar: searchBarElement,
+        input: searchInputElement
+      }
     }
   }
 
@@ -34,6 +42,11 @@ class PDFController {
       await this._loadPage(pageNumber, minimapScale);
     }
     this.loading = false;
+
+    // Reset previous search element values
+    this.resetSearch();
+    this.search.elements.input.value = '';
+    this.search.elements.input.dataset.value = '';
   }
 
   async _loadPage(pageNumber, minimapScale) {
@@ -74,6 +87,23 @@ class PDFController {
     const { loaded, total } = progressEvent;
     const percent = Math.round((loaded / total) * 100);
     this.loadingPercentage = percent < 100 ? percent : 100;
+  }
+
+  async activateSearch(refreshSearchResults) {
+		pdfSearchInput.value = pdfSearchInput.dataset.value || '';
+		$pdfSearchBar.classList.add('active');
+		$pdfSearchInput.focus();
+		await refreshSearchResults();
+	}
+
+  resetSearch() {
+    this.search.elements.bar.classList.remove('active');
+    this.search.elements.input.blur();
+    this.clearSearchElementsFromPDF();
+  }
+
+  clearSearchElementsFromPDF() {
+    Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
   }
 }
 

@@ -317,14 +317,6 @@ const loadCase = async (caseId) => {
 			saveLocalFacetOrdering(newOrder);
 		},
 	});
-
-	// Reset search params
-	$pdfSearchInput.value = '';
-	$pdfSearchInput.dataset.value = '';
-	$pdfSearchBar.classList.remove('active');
-	$pdfSearchInput.blur();
-	Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
-
 	isLoading = false;
 };
 
@@ -687,6 +679,8 @@ window.onload = async () => {
 	$pdfViewerOuter = $('#pdfViewerOuter');
 	$pdfMinimapOuter = $('#pdfMinimapOuter');
 	$pdfMinimapInner = $('#pdfMinimapInner');
+	pdfController = new PDFController($pdfViewer, $pdfMinimapInner, $pdfSearchBar, $pdfSearchInput);
+
 
 	//---------------------------------------
 	// Generate case sets
@@ -716,22 +710,6 @@ window.onload = async () => {
 
 	let currentSearchPos = -1;
 
-	const activateSearch = async () => {
-		pdfSearchInput.value = pdfSearchInput.dataset.value ? pdfSearchInput.dataset.value : '';
-		$pdfSearchBar.classList.add('active');
-		$pdfSearchInput.focus();
-		await refreshSearchResults();
-	}
-
-	$pdfSearchButton.onclick = activateSearch;
-
-	// Listening for ctrl + f
-	window.onkeydown = async (e) => {
-		if ((e.ctrlKey || e.metaKey) && String.fromCharCode(e.which).toLowerCase() == 'f') {
-			await activateSearch();
-		}
-	};
-
 	const goToSearchPoint = (index) => {
 		searchResultsWraps.forEach((w) => w.wrap.classList.remove('active'));
 		const newWrap = searchResultsWraps[index];
@@ -759,47 +737,56 @@ window.onload = async () => {
 
 	$pdfSearchInput.onsearch = (e) => {
 		if (!e.target.value) {
-      $pdfSearchBar.classList.remove('active');
-			$pdfSearchInput.blur();
-			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+			pdfController.resetSearch();
 		}
 	}
 
 	const refreshSearchResults = async () => {
-			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+		pdfController.clearSearchElementsFromPDF();
 
-			if (!$pdfSearchInput.value) {
-				return;
-			}
+		if (!$pdfSearchInput.value) {
+			return;
+		}
 
-			const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
+		const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
 		searchResultsWraps = processPages($pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint', pdfController.pdf.pageOffsets);
 
-			searchResultsWraps.forEach((pointWrap) => {
-				pointWrap.points.forEach((el) => {
-					el.style.boxSizing = `content-box`;
-					el.style.paddingBottom = '2px';
-					el.style.paddingTop = '2px';
-					el.style.paddingLeft = '2px';
-					el.style.paddingRight = '2px';
-					el.style.transform = `translate(-2px, -2px)`;
-					el.style.backgroundColor = `#0000ff7a`;
-				});
+		searchResultsWraps.forEach((pointWrap) => {
+			pointWrap.points.forEach((el) => {
+				el.style.boxSizing = `content-box`;
+				el.style.paddingBottom = '2px';
+				el.style.paddingTop = '2px';
+				el.style.paddingLeft = '2px';
+				el.style.paddingRight = '2px';
+				el.style.transform = `translate(-2px, -2px)`;
+				el.style.backgroundColor = `#0000ff7a`;
 			});
+		});
 
-			const pdfMinimapElsWraps = processPages(
-				$pdfMinimapInner,
-				searchResultsWithBoundingBoxes.boundingBoxes,
-				MINIMAP_SCALE,
+		const pdfMinimapElsWraps = processPages(
+			$pdfMinimapInner,
+			searchResultsWithBoundingBoxes.boundingBoxes,
+			MINIMAP_SCALE,
 			'searchDivPoint',
 			pdfController.minimap.pageOffsets
-			);
-			pdfMinimapElsWraps.forEach((pointWrap) => {
-				pointWrap.points.forEach((el) => {
-					el.style.backgroundColor = `blue`;
-				});
+		);
+
+		pdfMinimapElsWraps.forEach((pointWrap) => {
+			pointWrap.points.forEach((el) => {
+				el.style.backgroundColor = `blue`;
 			});
+		});
 	}
+
+	$pdfSearchButton.onclick = () => pdfController.activateSearch(refreshSearchResults);
+
+	// Listening for ctrl + f
+	window.onkeydown = async (e) => {
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+			e.preventDefault();
+			await pdfController.activateSearch(refreshSearchResults);
+		}
+	};
 
 	$pdfSearchInput.onkeyup = async (e) => {
 		clearTimeout(searchDebounce);
@@ -890,8 +877,6 @@ window.onload = async () => {
 
 	// Constrain height first
 	$pdfViewer.style.height = $pdfViewerOuter.offsetHeight + 'px';
-
-	pdfController = new PDFController($pdfViewer, $pdfMinimapInner);
 	await loadCase(caseId);
 
 	//---------------------------------------
