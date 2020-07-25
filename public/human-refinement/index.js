@@ -176,8 +176,6 @@ const loadCase = async (caseId) => {
 
 	$caseFacetsTable.classList.add('loading');
 	$pdf.classList.add('loading');
-	$pdfMinimapInner.innerHTML = '';
-	$pdfViewer.innerHTML = '';
 
 	Array.from($casesTableBody.querySelectorAll('tr')).forEach((tr) => {
 		if (tr.dataset.caseid == caseId) {
@@ -188,16 +186,15 @@ const loadCase = async (caseId) => {
 	});
 
 	currentCase = await fetch(`/api/human-refinement/cases/${caseId}`).then((t) => t.json());
-
 	currentCaseData = await loadCaseData(currentCase.caseMeta);
 
 	const dateFacets = currentCase.facets.find((f) => f.type == 'date');
 	const booleanFacets = currentCase.facets.filter((f) => f.type == 'boolean');
 
 	await Promise.all([
-		runDateFacetWorkers(dateFacets, currentCaseData),
+		pdfController.loadPdf(currentCase.caseMeta.pdfURL, MINIMAP_SCALE),
 		runBooleanFacetWorkers(booleanFacets, currentCaseData),
-		pdfController.loadPdf(currentCase.caseMeta.pdfURL, MINIMAP_SCALE)
+		runDateFacetWorkers(dateFacets, currentCaseData)
 	]);
 
 	$caseFacetsTableBody.innerHTML = null;
@@ -205,7 +202,6 @@ const loadCase = async (caseId) => {
 	let currentCaseFacets = currentCase.facets;
 
 	const localFacetOrdering = loadLocalFacetOrdering();
-
 	if(localFacetOrdering) {
 		// TODO: Handle new facets
 		currentCaseFacets.sort((a, b) => {

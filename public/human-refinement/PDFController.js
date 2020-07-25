@@ -28,18 +28,14 @@ class PDFController {
     }
   }
 
-  async reset() {
-    this.viewer = {};
-    this.minimap = {};
-    this.setLoading(true);
-  }
-
   setLoading(loading) {
     this.isLoading = loading;
     loading ? this._showLoadingSpinner() : this._hideLoadingSpinner();
   }
 
   async loadPdf (url, minimapScale) {
+    this.minimap.element.innerHTML = '';
+    this.viewer.element.innerHTML = '';
     this.document = await pdfjsLib.getDocument(url).promise;
 
     for (let pageNumber = 1; pageNumber <= this.document.numPages; pageNumber++) {
