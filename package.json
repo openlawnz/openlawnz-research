@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "GPL-3.0",
   "scripts": {
+    "lint": "eslint public/**/*.js",
     "start": "node index",
     "dev": "nodemon -r dotenv/config index",
     "test": "jest tests/**/*.test.js --coverage"
@@ -14,12 +15,31 @@
     "express": "^4.17.1",
     "express-basic-auth": "^1.2.0",
     "json2csv": "^5.0.1",
-    "pg": "^8.2.1",
-    "uuid": "^8.1.0"
+    "pg": "^8.3.0",
+    "uuid": "^8.2.0"
   },
   "devDependencies": {
+    "canvas": "^2.6.1",
     "dotenv": "^8.2.0",
-    "jest": "^26.0.1",
-    "nodemon": "^2.0.4"
+    "eslint": "^7.5.0",
+    "jest": "^26.1.0",
+    "nodemon": "^2.0.4",
+    "pdfjs-dist": "^2.4.456"
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "statements": 10.49,
+        "branches": 7.31,
+        "lines": 11.3,
+        "functions": 11.11
+      }
+    },
+    "collectCoverageFrom": [
+      "public/**/*.js"
+    ],
+    "setupFilesAfterEnv": [
+      "./tests/setup.js"
+    ]
   }
 }

@@ -1,8 +1,3 @@
-const $ = (selector, context) => {
-	const found = (context || document).querySelectorAll(selector);
-	return found.length > 1 ? found : found[0];
-};
-
 const init = async () => {
 	const dynamicFieldAddTemplate = $('#dynamic-field-template').content;
 
@@ -162,7 +157,7 @@ const init = async () => {
 		search(params);
 	});
 
-	
+
 	$dynamicFields.addEventListener('click', (e) => {
 		if (e.target.classList.contains('dynamic-field-delete')) {
 			e.target.parentNode.remove();
@@ -180,7 +175,7 @@ const init = async () => {
 		$searchCategoryField.value = initialParams.get('category') || 'All';
 		$searchStartDate.value = initialParams.get('startDate');
 		$searchEndDate.value = initialParams.get('endDate');
-		
+
 		const caseSetId = initialParams.get('caseSetId');
 		if(caseSetId) {
 			$searchCaseSetField.value = caseSetId;

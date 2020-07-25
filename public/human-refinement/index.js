@@ -2,16 +2,12 @@
 This project is deliberately vanilla javascript.
 */
 
-const $ = (selector, context) => {
-	const found = (context || document).querySelectorAll(selector);
-	return found.length > 1 ? found : found[0];
-};
+let pdfController;
 
 const MINIMAP_SCALE = 0.2;
 
 const facetParserWorkers = {};
 let isLoading = false;
-let pdfState;
 let searchResultsWraps;
 let booleanBoundingBoxes = {};
 let dateBoundingBoxes = {};
@@ -81,61 +77,6 @@ const loadLocalFacetOrdering = () => {
 const saveLocalFacetOrdering = (localFacetOrdering) => {
 	localStorage.setItem('localFacetOrdering', JSON.stringify(localFacetOrdering))
 }
-
-const renderPDFCanvas = (attachToEl, viewport, page) => {
-	let pdfCanvas = document.createElement('canvas');
-	attachToEl.appendChild(pdfCanvas);
-	let pdfContext = pdfCanvas.getContext('2d');
-	pdfCanvas.style.display = 'block';
-	pdfCanvas.height = viewport.height;
-	pdfCanvas.width = viewport.width;
-
-	page.render({
-		canvasContext: pdfContext,
-		viewport: viewport,
-	});
-};
-
-const loadPage = async (pageNumber, state) => {
-	const page = await state.doc.getPage(pageNumber);
-
-	var pdfViewport = page.getViewport({ scale: 1.0 });
-	var pdfMinimapViewport = page.getViewport({ scale: state.scale });
-
-	renderPDFCanvas(state.pdfEl, pdfViewport, page);
-	renderPDFCanvas(state.pdfMinimapEl, pdfMinimapViewport, page);
-
-	if (state.pageWidth == -1) {
-		state.pageWidth = pdfViewport.width;
-		state.pageHeight = pdfViewport.height;
-		state.docHeight = state.pageHeight * state.numPages;
-	}
-
-	return state;
-};
-
-const pdfControl = async (pdfURL, pdfEl, pdfMinimapEl, scale) => {
-	const loadingTask = pdfjsLib.getDocument(pdfURL);
-	const doc = await loadingTask.promise;
-	const numPages = doc.numPages;
-
-	const state = {
-		doc,
-		pdfEl,
-		pdfMinimapEl,
-		pageWidth: -1,
-		pageHeight: -1,
-		docHeight: -1,
-		numPages: doc.numPages,
-		scale,
-	};
-
-	for (let i = 0; i < numPages; i++) {
-		await loadPage(i + 1, state);
-	}
-
-	return state;
-};
 
 const search = async (searchQuery, caseData) => {
 	return new Promise((resolve) => {
@@ -255,13 +196,10 @@ const loadCase = async (caseId) => {
 	const dateFacets = currentCase.facets.find((f) => f.type == 'date');
 	const booleanFacets = currentCase.facets.filter((f) => f.type == 'boolean');
 
-	let dateFacetResult;
-	let booleanFacetResult;
-
-	[dateFacetResult, booleanFacetResult, pdfState] = await Promise.all([
+	await Promise.all([
 		runDateFacetWorkers(dateFacets, currentCaseData),
 		runBooleanFacetWorkers(booleanFacets, currentCaseData),
-		pdfControl(currentCase.caseMeta.pdfURL, $pdfViewer, $pdfMinimapInner, MINIMAP_SCALE),
+		pdfController.loadPdf(currentCase.caseMeta.pdfURL, MINIMAP_SCALE)
 	]);
 
 	$caseFacetsTableBody.innerHTML = null;
@@ -277,7 +215,7 @@ const loadCase = async (caseId) => {
 		});
 	}
 
-	currentCaseFacets.forEach((facet, i) => {
+	currentCaseFacets.forEach((facet) => {
 		const tr = document.createElement('tr');
 		const facetTd = document.createElement('td');
 		const sortableTd = document.createElement('td');
@@ -380,12 +318,19 @@ const loadCase = async (caseId) => {
 		},
 	});
 
+	// Reset search params
+	$pdfSearchInput.value = '';
+	$pdfSearchInput.dataset.value = '';
+	$pdfSearchBar.classList.remove('active');
+	$pdfSearchInput.blur();
+	Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+
 	isLoading = false;
 };
 
 window.onresize = () => {
 	if (viewportNavigator) {
-		viewportNavigator.style.height = pdfViewer.getClientRects()[0].height * MINIMAP_SCALE + 'px';
+		viewportNavigator.style.height = $pdfViewer.getClientRects()[0].height * MINIMAP_SCALE + 'px';
 	}
 };
 
@@ -421,11 +366,11 @@ const refreshFacetTable = (facetId) => {
 	});
 };
 
-const processPages = (el, pages, scale, cssClass) => {
+const processPages = (el, pages = [], scale, cssClass, pageOffsets) => {
 	const wraps = [];
 
-	pages.forEach((page, pageI) => {
-		const offset = Math.floor(pdfState.pageHeight) * scale * pageI;
+	pages.forEach((page, pageIndex) => {
+		const offset = pageOffsets[pageIndex];
 
 		page.forEach((p) => {
 			const pdfDivPointWrap = document.createElement('div');
@@ -548,7 +493,7 @@ const loadFacet = (facetId) => {
 	};
 
 	const saveFacet = async (facetId, facetValue) => {
-		const json = await fetch(`/api/human-refinement/cases/${currentCase.caseMeta.id}`, {
+		await fetch(`/api/human-refinement/cases/${currentCase.caseMeta.id}`, {
 			method: 'POST',
 			body: JSON.stringify({
 				facetId,
@@ -561,8 +506,6 @@ const loadFacet = (facetId) => {
 				'Content-Type': 'application/json',
 			},
 		}).then((r) => r.json());
-
-		//$(`tr[data-facet='${facetId}'] td:nth-child(2)`).innerHTML = facetValue;
 
 		facet.value = facetValue;
 		facet.not_applicable = facetValue == 'na';
@@ -606,7 +549,7 @@ const loadFacet = (facetId) => {
 
 	const pages = facet.type == 'boolean' ? booleanBoundingBoxes[facetId] : dateBoundingBoxes.boundingBoxes;
 
-	const pdfViewWraps = processPages(pdfViewer, pages, 1.0, 'pdfDivPoint');
+	const pdfViewWraps = processPages($pdfViewer, pages, 1.0, 'pdfDivPoint', pdfController.pageOffsets);
 
 	const dates = [];
 
@@ -635,7 +578,7 @@ const loadFacet = (facetId) => {
 		});
 	});
 
-	const pdfMinimapElsWraps = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint');
+	const pdfMinimapElsWraps = processPages($pdfMinimapInner, pages, MINIMAP_SCALE, 'pdfDivPoint', pdfController.minimapPageOffsets);
 
 	pdfMinimapElsWraps.forEach((pointWrap) => {
 		pointWrap.points.forEach((el) => {
@@ -690,7 +633,7 @@ const loadFacet = (facetId) => {
 		newWrap.wrap.classList.add('active');
 
 		const newPos = newWrap.points[0].offsetTop;
-		pdfViewer.scrollTop = newPos - 10;
+		$pdfViewer.scrollTop = newPos - 10;
 		currentSelectedPos = index;
 	};
 
@@ -709,7 +652,7 @@ const loadFacet = (facetId) => {
 	};
 
 	//goToPoint(currentSelectedPos);
-	pdfViewer.scrollTop = 0;
+	$pdfViewer.scrollTop = 0;
 };
 
 window.onload = async () => {
@@ -774,15 +717,19 @@ window.onload = async () => {
 
 	let currentSearchPos = -1;
 
-	$pdfSearchButton.onclick = () => {
-		$pdfSearchBar.classList.toggle('active');
+	const activateSearch = async () => {
+		pdfSearchInput.value = pdfSearchInput.dataset.value ? pdfSearchInput.dataset.value : '';
+		$pdfSearchBar.classList.add('active');
 		$pdfSearchInput.focus();
-	};
+		await refreshSearchResults();
+	}
 
-	window.onkeydown = (event) => {
-		if ((event.ctrlKey || event.metaKey) && String.fromCharCode(event.which).toLowerCase() == 'f') {
-			$pdfSearchBar.classList.toggle('active');
-			$pdfSearchInput.focus();
+	$pdfSearchButton.onclick = activateSearch;
+
+	// Listening for ctrl + f
+	window.onkeydown = async (e) => {
+		if ((e.ctrlKey || e.metaKey) && String.fromCharCode(e.which).toLowerCase() == 'f') {
+			await activateSearch();
 		}
 	};
 
@@ -811,15 +758,15 @@ window.onload = async () => {
 
 	let searchDebounce;
 
-	$pdfSearchInput.onkeyup = async (e) => {
-		clearTimeout(searchDebounce);
+	$pdfSearchInput.onsearch = (e) => {
+		if (!e.target.value) {
+      $pdfSearchBar.classList.remove('active');
+			$pdfSearchInput.blur();
+			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
+		}
+	}
 
-		// if(e.keyCode == 27) {
-		//   $pdfSearchInput.classList.toggle('active');
-		//   $pdfSearchInput.blur();
-		// }
-
-		searchDebounce = setTimeout(async () => {
+	const refreshSearchResults = async () => {
 			Array.from($('.searchDivPointWrap') || []).forEach((p) => p.remove());
 
 			if (!$pdfSearchInput.value) {
@@ -827,7 +774,7 @@ window.onload = async () => {
 			}
 
 			const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
-			searchResultsWraps = processPages(pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint');
+		searchResultsWraps = processPages($pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint', pdfController.pageOffsets);
 
 			searchResultsWraps.forEach((pointWrap) => {
 				pointWrap.points.forEach((el) => {
@@ -845,14 +792,20 @@ window.onload = async () => {
 				$pdfMinimapInner,
 				searchResultsWithBoundingBoxes.boundingBoxes,
 				MINIMAP_SCALE,
-				'searchDivPoint'
+			'searchDivPoint',
+			pdfController.minimapPageOffsets
 			);
 			pdfMinimapElsWraps.forEach((pointWrap) => {
 				pointWrap.points.forEach((el) => {
 					el.style.backgroundColor = `blue`;
 				});
 			});
-		}, 500);
+	}
+
+	$pdfSearchInput.onkeyup = async (e) => {
+		clearTimeout(searchDebounce);
+		e.target.dataset.value = e.target.value;
+		searchDebounce = setTimeout(refreshSearchResults, 500);
 
 		if (e.keyCode === 13) {
 			pdfSearchNext.click();
@@ -939,6 +892,7 @@ window.onload = async () => {
 	// Constrain height first
 	$pdfViewer.style.height = $pdfViewerOuter.offsetHeight + 'px';
 
+	pdfController = new PDFController($pdfViewer, $pdfMinimapInner);
 	await loadCase(caseId);
 
 	//---------------------------------------
@@ -947,8 +901,8 @@ window.onload = async () => {
 
 	let isDraggingViewport = false;
 
-	$pdfViewer.onscroll = function (e) {
-		$pdfMinimapInner.style.transform = `translateY(-${pdfViewer.scrollTop * MINIMAP_SCALE}px)`;
+	$pdfViewer.onscroll = function () {
+		$pdfMinimapInner.style.transform = `translateY(-${$pdfViewer.scrollTop * MINIMAP_SCALE}px)`;
 	};
 
 	$pdfMinimapOuter.style.width = $pdfViewer.getClientRects()[0].width * MINIMAP_SCALE + 'px';

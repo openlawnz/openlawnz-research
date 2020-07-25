@@ -3,11 +3,6 @@ This project is deliberately vanilla javascript.
 Things could be abstracted and made reusable.
 */
 
-const $ = (selector, context) => {
-	const found = (context || document).querySelectorAll(selector);
-	return found.length > 1 ? found : found[0];
-};
-
 let $accCasesTotal;
 let $accCasesProcessed;
 let $accGetStarted;

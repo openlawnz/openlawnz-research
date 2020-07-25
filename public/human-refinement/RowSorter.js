@@ -1,3 +1,4 @@
+/* eslint-disable */
 /*
 From https://github.com/arteyazilim/rowsorter
 */
