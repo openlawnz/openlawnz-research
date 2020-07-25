@@ -7,7 +7,7 @@
     "lint": "eslint public/**/*.js",
     "start": "node index",
     "dev": "nodemon -r dotenv/config index",
-    "test": "jest tests/**/*.test.js --coverage"
+    "test": "npm run lint && jest tests/**/*.test.js --coverage"
   },
   "dependencies": {
     "body-parser": "^1.19.0",

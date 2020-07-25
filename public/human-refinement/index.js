@@ -7,7 +7,6 @@ let pdfController;
 const MINIMAP_SCALE = 0.2;
 
 const facetParserWorkers = {};
-let isLoading = false;
 let searchResultsWraps;
 let booleanBoundingBoxes = {};
 let dateBoundingBoxes = {};
@@ -168,11 +167,10 @@ const loadCaseData = async (caseMetaData) => {
 };
 
 const loadCase = async (caseId) => {
-	if (isLoading) {
+	if (pdfController.isLoading) {
 		return;
-	} else if (!isLoading) {
-		isLoading = true;
 	}
+	pdfController.setLoading(true);
 
 	history.pushState(null, document.title, `?caseSetId=${currentCaseSetId}&caseId=${caseId}` + window.location.hash);
 
@@ -317,7 +315,7 @@ const loadCase = async (caseId) => {
 			saveLocalFacetOrdering(newOrder);
 		},
 	});
-	isLoading = false;
+	pdfController.setLoading(false);
 };
 
 window.onresize = () => {
@@ -541,7 +539,7 @@ const loadFacet = (facetId) => {
 
 	const pages = facet.type == 'boolean' ? booleanBoundingBoxes[facetId] : dateBoundingBoxes.boundingBoxes;
 
-	const pdfViewWraps = processPages($pdfViewer, pages, 1.0, 'pdfDivPoint', pdfController.pdf.pageOffsets);
+	const pdfViewWraps = processPages($pdfViewer, pages, 1.0, 'pdfDivPoint', pdfController.viewer.pageOffsets);
 
 	const dates = [];
 
@@ -564,9 +562,9 @@ const loadFacet = (facetId) => {
 				}
 			}
 
-			el.style.boxSizing = `content-box`;
+			el.style.boxSizing = 'content-box';
 			el.style.paddingBottom = '2px';
-			el.style.borderBottom = `2px solid red`;
+			el.style.borderBottom = '2px solid red';
 		});
 	});
 
@@ -574,7 +572,7 @@ const loadFacet = (facetId) => {
 
 	pdfMinimapElsWraps.forEach((pointWrap) => {
 		pointWrap.points.forEach((el) => {
-			el.style.backgroundColor = `red`;
+			el.style.backgroundColor = 'red';
 		});
 	});
 
@@ -679,7 +677,8 @@ window.onload = async () => {
 	$pdfViewerOuter = $('#pdfViewerOuter');
 	$pdfMinimapOuter = $('#pdfMinimapOuter');
 	$pdfMinimapInner = $('#pdfMinimapInner');
-	pdfController = new PDFController($pdfViewer, $pdfMinimapInner, $pdfSearchBar, $pdfSearchInput);
+	const $pdfLoadingSpinnerOuter = $('#pdfLoadingSpinnerOuter');
+	pdfController = new PDFController($pdfViewer, $pdfMinimapInner, $pdfSearchBar, $pdfSearchInput, $pdfLoadingSpinnerOuter);
 
 
 	//---------------------------------------
@@ -749,17 +748,17 @@ window.onload = async () => {
 		}
 
 		const searchResultsWithBoundingBoxes = await search($pdfSearchInput.value, currentCaseData);
-		searchResultsWraps = processPages($pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint', pdfController.pdf.pageOffsets);
+		searchResultsWraps = processPages($pdfViewer, searchResultsWithBoundingBoxes.boundingBoxes, 1.0, 'searchDivPoint', pdfController.viewer.pageOffsets);
 
 		searchResultsWraps.forEach((pointWrap) => {
 			pointWrap.points.forEach((el) => {
-				el.style.boxSizing = `content-box`;
+				el.style.boxSizing = 'content-box';
 				el.style.paddingBottom = '2px';
 				el.style.paddingTop = '2px';
 				el.style.paddingLeft = '2px';
 				el.style.paddingRight = '2px';
-				el.style.transform = `translate(-2px, -2px)`;
-				el.style.backgroundColor = `#0000ff7a`;
+				el.style.transform = 'translate(-2px, -2px)';
+				el.style.backgroundColor = '#0000ff7a';
 			});
 		});
 
@@ -773,7 +772,7 @@ window.onload = async () => {
 
 		pdfMinimapElsWraps.forEach((pointWrap) => {
 			pointWrap.points.forEach((el) => {
-				el.style.backgroundColor = `blue`;
+				el.style.backgroundColor = 'blue';
 			});
 		});
 	}
@@ -920,7 +919,7 @@ window.onload = async () => {
 	viewportNavigator.onmousedown = () => {
 		isDraggingViewport = true;
 		$pdfViewer.classList.add('dragging');
-    document.body.style["user-select"] = "none";
+    document.body.style['user-select'] = 'none';
 
 		document.body.onmousemove = (e) => {
 			if (lastPos) {
@@ -936,7 +935,7 @@ window.onload = async () => {
 
 		document.body.onmouseup = () => {
 			$pdfViewer.classList.remove('dragging');
-      document.body.style["user-select"] = "auto";
+      document.body.style['user-select'] = 'auto';
 			document.body.onmousemove = () => { };
 			document.body.onmouseup = () => { };
 			setTimeout(() => {

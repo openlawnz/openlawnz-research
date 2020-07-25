@@ -9,6 +9,7 @@
         "ecmaVersion": 11
     },
     "rules": {
-        "no-undef": "off"
+        "no-undef": "off",
+        "quotes": [2, "single", "avoid-escape"]
     }
 }

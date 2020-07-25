@@ -41,13 +41,13 @@ const init = async () => {
 	})
 
 	const exportData = async (params) => {
-		window.open(`/api/export/search?` + params.toString(), '_blank');
+		window.open('/api/export/search?' + params.toString(), '_blank');
 	};
 
 	const search = (params) => {
 		$resultsTable.innerHTML = '';
 		params.set('preview', true);
-		fetch(`/api/export/search?` + params.toString())
+		fetch('/api/export/search?' + params.toString())
 			.then((t) => t.json())
 			.then((results) => {
 				$results.style.display = 'block';
@@ -79,11 +79,11 @@ const init = async () => {
 									td.innerHTML = 'null';
 								}
 							} else if (Array.isArray(col) && col.length > 1) {
-								td.innerHTML = `<ul>`;
+								td.innerHTML = '<ul>';
 								col.forEach((c) => {
 									td.innerHTML += `<li>${c}</li>`;
 								});
-								td.innerHTML += `</ul>`;
+								td.innerHTML += '</ul>';
 							} else {
 								td.innerText = col;
 							}
@@ -130,6 +130,7 @@ const init = async () => {
 		}
 
 		let $activeKeywordsFields = $('.dynamic-field', $keywordsFields);
+		// eslint-disable-next-line no-prototype-builtins
 		if (!NodeList.prototype.isPrototypeOf($activeKeywordsFields)) {
 			$activeKeywordsFields = [$activeKeywordsFields];
 		}
