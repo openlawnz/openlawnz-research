@@ -413,7 +413,7 @@ const isAdminOrUser = (user) => {
 
 	const citationQuery = `(
 		ARRAY(
-			SELECT DISTINCT main.case_citations.citation
+			SELECT DISTINCT TRIM (trailing '\n' from main.case_citations.citation)
 			FROM  main.case_citations
 			WHERE main.case_citations.case_id = m.id
 		)
@@ -434,6 +434,14 @@ const isAdminOrUser = (user) => {
 		WHERE m.court_id = main.courts.id
 	) AS court`;
 
+	const dateQuery = `(
+		SELECT TO_CHAR(
+			main.cases.case_date, 'DD Month YYYY'
+		) as date
+		FROM  main.cases
+		WHERE m.id = main.cases.id
+	) AS date`;
+
 	const accColumn = (facetId, colName, facetName) => `
 		LEFT JOIN LATERAL (
 		SELECT
@@ -441,7 +449,9 @@ const isAdminOrUser = (user) => {
 			FROM (
 				SELECT 
 					ugc.facet_value_metadata.user_id,
-					ugc.facet_value_metadata.date_recorded,
+					TO_CHAR(
+						ugc.facet_value_metadata.date_recorded, 'HH24:MI DD FMMonth FMYYYY'
+					) as date_recorded,
 					ugc.boolean_facet_values.value as boolean_value,
 					ugc.boolean_facet_values.not_applicable as boolean_not_applicable,
 					ugc.boolean_facet_values.unsure as boolean_unsure,
@@ -515,7 +525,7 @@ const isAdminOrUser = (user) => {
 						break;
 
 					case 'date':
-						s.push('case_date');
+						s.push(dateQuery);
 						break;
 
 					case 'citation':
