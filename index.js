@@ -88,7 +88,7 @@ const isAdminOrUser = (user) => {
 	app.get('/api/home/random-case-sets', async (req, res) => {
 		const result = await client.query(`
 		SELECT id
-		FROM funnel.random_case_sets
+		FROM ugc.random_case_sets
 		ORDER BY random()
 		LIMIT 1`);
 		res.json(result.rows);
@@ -157,14 +157,14 @@ const isAdminOrUser = (user) => {
 
 			await client.query(`
 		TRUNCATE
-		funnel.random_case_sets`);
+		ugc.random_case_sets`);
 
 			await Promise.all(
 				sets.map((s) =>
 					client.query(
 						`
 				INSERT INTO
-				funnel.random_case_sets
+				ugc.random_case_sets
 				(id, case_set)
 				VALUES ($1, $2)`,
 						[uuidv4(), JSON.stringify(s)]
@@ -183,14 +183,14 @@ const isAdminOrUser = (user) => {
 
 	app.get('/api/human-refinement/case-sets', async (req, res) => {
 		const result = await client.query(`
-		SELECT id FROM funnel.random_case_sets`);
+		SELECT id FROM ugc.random_case_sets`);
 		res.json(result.rows);
 	});
 
 	app.get('/api/human-refinement/case-sets/:id', async (req, res) => {
 		const result = await client.query(
 			`
-		SELECT * FROM funnel.random_case_sets WHERE id=$1`,
+		SELECT * FROM ugc.random_case_sets WHERE id=$1`,
 			[req.params.id]
 		);
 		res.json(result.rows);
@@ -211,22 +211,22 @@ const isAdminOrUser = (user) => {
 			client.query(
 				`
 		  SELECT 
-			funnel.facets.id AS facet_id, 
-			funnel.facets.type, 
-			funnel.facets.description,
-			funnel.facets.name,
-			funnel.facet_boolean_keywords.id AS option_id,
-			funnel.facet_boolean_keywords.whole_word,
-			funnel.facet_boolean_keywords.value,
+			ugc.facets.id AS facet_id, 
+			ugc.facets.type, 
+			ugc.facets.description,
+			ugc.facets.name,
+			ugc.facet_boolean_keywords.id AS option_id,
+			ugc.facet_boolean_keywords.whole_word,
+			ugc.facet_boolean_keywords.value,
 			(
 			  SELECT COUNT(*) FROM 
-			  funnel.facet_value_metadata
-			  WHERE funnel.facet_value_metadata.ugc_id = funnel.facets.id
-			  AND funnel.facet_value_metadata.case_id = $1
+			  ugc.facet_value_metadata
+			  WHERE ugc.facet_value_metadata.ugc_id = ugc.facets.id
+			  AND ugc.facet_value_metadata.case_id = $1
 			) AS completed_count
-		  FROM funnel.facets
-		  LEFT JOIN funnel.facet_boolean_keywords 
-		  ON funnel.facets.id = funnel.facet_boolean_keywords.facet_id`,
+		  FROM ugc.facets
+		  LEFT JOIN ugc.facet_boolean_keywords 
+		  ON ugc.facets.id = ugc.facet_boolean_keywords.facet_id`,
 				[caseId]
 			),
 
@@ -242,10 +242,10 @@ const isAdminOrUser = (user) => {
 		  d.date_year AS date_year,
 		  d.not_applicable AS date_not_applicable,
 		  d.unsure AS date_unsure
-		  FROM funnel.facet_value_metadata AS meta
-		  LEFT JOIN funnel.boolean_facet_values AS b
+		  FROM ugc.facet_value_metadata AS meta
+		  LEFT JOIN ugc.boolean_facet_values AS b
 			ON b.metadata_id = meta.id
-		  LEFT JOIN funnel.date_facet_values AS d
+		  LEFT JOIN ugc.date_facet_values AS d
 			ON d.metadata_id = meta.id
 		  WHERE meta.case_id = $1
 		  AND meta.user_id = $2
@@ -325,7 +325,7 @@ const isAdminOrUser = (user) => {
 
 			await client.query(
 				`
-			INSERT INTO funnel.facet_value_metadata
+			INSERT INTO ugc.facet_value_metadata
 			(
 			  id, 
 			  ugc_id, 
@@ -339,7 +339,7 @@ const isAdminOrUser = (user) => {
 			if (req.body.type == 'boolean') {
 				await client.query(
 					`
-			INSERT INTO funnel.boolean_facet_values
+			INSERT INTO ugc.boolean_facet_values
 			(
 			  id, 
 			  metadata_id, 
@@ -352,7 +352,7 @@ const isAdminOrUser = (user) => {
 			} else if (req.body.type == 'date') {
 				await client.query(
 					`
-			INSERT INTO funnel.date_facet_values
+			INSERT INTO ugc.date_facet_values
 			(
 			  id, 
 			  metadata_id, 
@@ -440,32 +440,32 @@ const isAdminOrUser = (user) => {
 			json_agg(item) as ${colName}
 			FROM (
 				SELECT 
-					funnel.facet_value_metadata.user_id,
-					funnel.facet_value_metadata.date_recorded,
-					funnel.boolean_facet_values.value as boolean_value,
-					funnel.boolean_facet_values.not_applicable as boolean_not_applicable,
-					funnel.boolean_facet_values.unsure as boolean_unsure,
-					funnel.date_facet_values.date_day as date_day,
-					funnel.date_facet_values.date_month as date_month,
-					funnel.date_facet_values.date_year as date_year,
-					funnel.date_facet_values.not_applicable as date_not_applicable,
-					funnel.date_facet_values.unsure as date_unsure
-				FROM funnel.facet_value_metadata 
-				INNER JOIN funnel.facets ON funnel.facets.id = funnel.facet_value_metadata.ugc_id
-				LEFT JOIN funnel.boolean_facet_values 
-					ON funnel.boolean_facet_values.metadata_id = funnel.facet_value_metadata.id
-				LEFT JOIN funnel.date_facet_values 
-					ON funnel.date_facet_values.metadata_id = funnel.facet_value_metadata.id
-				WHERE funnel.facet_value_metadata.case_id = ol.id
-				AND funnel.facet_value_metadata.ugc_id = '${facetId}'
+					ugc.facet_value_metadata.user_id,
+					ugc.facet_value_metadata.date_recorded,
+					ugc.boolean_facet_values.value as boolean_value,
+					ugc.boolean_facet_values.not_applicable as boolean_not_applicable,
+					ugc.boolean_facet_values.unsure as boolean_unsure,
+					ugc.date_facet_values.date_day as date_day,
+					ugc.date_facet_values.date_month as date_month,
+					ugc.date_facet_values.date_year as date_year,
+					ugc.date_facet_values.not_applicable as date_not_applicable,
+					ugc.date_facet_values.unsure as date_unsure
+				FROM ugc.facet_value_metadata 
+				INNER JOIN ugc.facets ON ugc.facets.id = ugc.facet_value_metadata.ugc_id
+				LEFT JOIN ugc.boolean_facet_values 
+					ON ugc.boolean_facet_values.metadata_id = ugc.facet_value_metadata.id
+				LEFT JOIN ugc.date_facet_values 
+					ON ugc.date_facet_values.metadata_id = ugc.facet_value_metadata.id
+				WHERE ugc.facet_value_metadata.case_id = ol.id
+				AND ugc.facet_value_metadata.ugc_id = '${facetId}'
 				
 			) as item
 		) as ${colName} ON true
 
 		LEFT JOIN LATERAL(
-			SELECT funnel.facets.name as ${facetName}
-			FROM funnel.facets
-			WHERE funnel.facets.id = '${facetId}'
+			SELECT ugc.facets.name as ${facetName}
+			FROM ugc.facets
+			WHERE ugc.facets.id = '${facetId}'
 		) as ${facetName} ON true`;
 
 	const keywordExists = (keywords) => {
@@ -490,12 +490,12 @@ const isAdminOrUser = (user) => {
 
 	app.get('/api/export/columns', async (req, res) => {
 		const result = await client.query(`
-			SELECT DISTINCT funnel.facets.id, funnel.facets.name
-			FROM funnel.facets
+			SELECT DISTINCT ugc.facets.id, ugc.facets.name
+			FROM ugc.facets
 			WHERE (
 				SELECT COUNT(*)
-				FROM funnel.facet_value_metadata
-				WHERE funnel.facets.id = funnel.facet_value_metadata.ugc_id
+				FROM ugc.facet_value_metadata
+				WHERE ugc.facets.id = ugc.facet_value_metadata.ugc_id
 			) > 0
 			
 		`);
@@ -559,20 +559,31 @@ const isAdminOrUser = (user) => {
 			});
 		}
 
-		let dateRangeValues = [];
+		let whereValues = [];
 		let whereConditions = [];
 
 		if (req.query.startDate) {
-			dateRangeValues.push(req.query.startDate);
-			whereConditions.push('m.case_date >= $1');
+			whereValues.push(req.query.startDate);
+			whereConditions.push(`m.case_date >= $${whereValues.length}`);
 		}
 		if (req.query.endDate) {
-			dateRangeValues.push(req.query.endDate);
-			whereConditions.push('m.case_date < $2');
+			whereValues.push(req.query.endDate);
+			whereConditions.push(`m.case_date < $${whereValues.length}`);
+		}
+
+		if(!req.query.category) {
+			throw new Error("Missing category")
+		}
+
+		const category = req.query.category.toLowerCase();
+
+		if(category !== "all") {
+			whereValues.push(category)
+			whereConditions.push(`main.category_to_cases.category_id = $${whereValues.length}`);
 		}
 
 		if(req.query.caseSetId) {
-			const case_set = await client.query(`SELECT * FROM funnel.random_case_sets WHERE id = $1`, [req.query.caseSetId])
+			const case_set = await client.query(`SELECT * FROM ugc.random_case_sets WHERE id = $1`, [req.query.caseSetId])
 			whereConditions.push(`m.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
 		}
 
@@ -581,6 +592,7 @@ const isAdminOrUser = (user) => {
 			SELECT
 				${s.join(',')}
 			FROM main.cases as m
+			INNER JOIN main.category_to_cases ON m.id = main.category_to_cases.case_id
 			${whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : ""}
 				
 		) as ol ${lateralJoins.map((l) => l.sql).join('\n')}`;
@@ -589,10 +601,10 @@ const isAdminOrUser = (user) => {
 			q += ' LIMIT 100';
 		}
 		let a;
-		if (dateRangeValues.length === 0) {
+		if (whereValues.length === 0) {
 			a = await client.query(q);
 		} else {
-			a = await client.query(q, dateRangeValues);
+			a = await client.query(q, whereValues);
 		}
 
 		let columns = [];
