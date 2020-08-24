@@ -406,10 +406,25 @@ const isAdminOrUser = (user) => {
 	)`;
 
 	const judgeQuery = `(
+		ARRAY (
 			SELECT DISTINCT main.judge_to_cases.name
 			FROM  main.judge_to_cases
 			WHERE main.judge_to_cases.case_id = m.id
+		)
 	) AS judge`;
+
+	const representationQuery = `(
+
+		SELECT json_agg(item) as representation FROM
+		(
+			SELECT DISTINCT
+				party_type, 
+				names,
+				appearance
+			FROM main.party_and_representative_to_cases
+			WHERE main.party_and_representative_to_cases.case_id = m.id
+		) as item
+	)`;
 
 	const citationQuery = `(
 		ARRAY(
@@ -524,6 +539,14 @@ const isAdminOrUser = (user) => {
 						s.push('case_name');
 						break;
 
+					case 'location':
+						s.push('location');
+						break;
+
+					case 'filingNumber':
+						s.push('court_filing_number');
+						break;
+
 					case 'date':
 						s.push(dateQuery);
 						break;
@@ -547,6 +570,11 @@ const isAdminOrUser = (user) => {
 					case 'judge':
 						s.push(judgeQuery);
 						break;
+
+					case 'representation':
+						s.push(representationQuery);
+						break;
+
 				}
 			});
 		}
