@@ -506,6 +506,7 @@ const isAdminOrUser = (user) => {
 		) AS "${exists}_exists"`;
 	};
 
+
 	app.get('/export', (req, res) => {
 		res.render('export', {
 			pageKey: 'export',
@@ -532,47 +533,70 @@ const isAdminOrUser = (user) => {
 		let s = ['id'];
 		let lateralJoins = [];
 
+		let selectQueryFragment = ['c.id'];
+		let joinQueryFragment = [];
+		let groupbyQueryFragment = ['c.id'];
+
 		if (req.query.fixedColumns) {
 			req.query.fixedColumns.split(',').forEach((f) => {
 				switch (f) {
 					case 'name':
 						s.push('case_name');
+						selectQueryFragment.push('c.case_name');
 						break;
 
 					case 'location':
 						s.push('location');
+						selectQueryFragment.push('c.location');
 						break;
 
 					case 'filingNumber':
 						s.push('court_filing_number');
+						selectQueryFragment.push('c.court_filing_number');
 						break;
 
 					case 'date':
 						s.push(dateQuery);
+						selectQueryFragment.push(`TO_CHAR(c.case_date, 'DD Month YYYY') AS date`);
 						break;
 
 					case 'citation':
 						s.push(citationQuery);
+						selectQueryFragment.push(`ARRAY_REMOVE(ARRAY_AGG(DISTINCT TRIM (TRAILING '\n' FROM citation)), NULL) AS citation`);
+						joinQueryFragment.push(`LEFT JOIN main.case_citations ON c.id = main.case_citations.case_id`);
 						break;
 
 					case 'court':
 						s.push(courtsQuery);
+						selectQueryFragment.push(`crts.name as court`);
+						groupbyQueryFragment.push(`crts.name`);
+						joinQueryFragment.push(`LEFT JOIN main.courts crts ON c.court_id = crts.id`);
 						break;
 
 					case 'cases-cited':
 						s.push(casesCitedQuery);
+						selectQueryFragment.push(`ARRAY_REMOVE(ARRAY_AGG(DISTINCT TRIM (TRAILING ' ' FROM c2.case_name)), NULL) AS cases_cited`);
+						joinQueryFragment.push(`LEFT JOIN main.cases_cited cc ON cc.case_origin = c.id`);   
+						joinQueryFragment.push(`LEFT JOIN main.cases c2 ON cc.case_cited = c2.id`);
 						break;
 
 					case 'legislation-referenced':
 						s.push(legislationQuery);
+						selectQueryFragment.push(`JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('title', l.title, 'section', lc.section)) AS legislation`);
+						joinQueryFragment.push(`LEFT JOIN main.legislation_to_cases lc ON lc.case_id = c.id`);
+						joinQueryFragment.push(`LEFT JOIN main.legislation l ON l.id = lc.legislation_id`);
 						break;
 
 					case 'judge':
 						s.push(judgeQuery);
+						selectQueryFragment.push(`ARRAY_REMOVE(ARRAY_AGG(DISTINCT jc.name), NULL) AS judge`);
+						joinQueryFragment.push(`LEFT JOIN main.judge_to_cases jc ON c.id = jc.case_id`);
 						break;
 
 					case 'representation':
 						s.push(representationQuery);
+						selectQueryFragment.push(`JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('party_type', prc.party_type, 'names', prc.names, 'appearance', prc.appearance)) AS representation`);
+						joinQueryFragment.push(`LEFT JOIN main.party_and_representative_to_cases prc ON c.id = prc.case_id`);						
 						break;
 
 				}
@@ -602,11 +626,11 @@ const isAdminOrUser = (user) => {
 
 		if (req.query.startDate) {
 			whereValues.push(req.query.startDate);
-			whereConditions.push(`m.case_date >= $${whereValues.length}`);
+			whereConditions.push(`c.case_date >= $${whereValues.length}`);
 		}
 		if (req.query.endDate) {
 			whereValues.push(req.query.endDate);
-			whereConditions.push(`m.case_date < $${whereValues.length}`);
+			whereConditions.push(`c.case_date < $${whereValues.length}`);
 		}
 
 		if(!req.query.category) {
@@ -620,10 +644,24 @@ const isAdminOrUser = (user) => {
 			whereConditions.push(`main.category_to_cases.category_id = $${whereValues.length}`);
 		}
 
+
+
 		if(req.query.caseSetId) {
 			const case_set = await client.query(`SELECT * FROM ugc.random_case_sets WHERE id = $1`, [req.query.caseSetId])
-			whereConditions.push(`m.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
+			whereConditions.push(`c.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
 		}
+
+		let revisedQ = `
+			SELECT * FROM (
+			SELECT
+				${selectQueryFragment.join(',')}
+			FROM main.cases c
+    		INNER JOIN main.category_to_cases ON c.id = main.category_to_cases.case_id
+    		${joinQueryFragment.join(' ')}
+    		${whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : ""}
+    		GROUP BY ${groupbyQueryFragment.join(',')}
+    		ORDER BY c.id
+    		) as ol ${lateralJoins.map((l) => l.sql).join('\n')}`;
 
 		let q = `
 		SELECT * FROM (
@@ -637,14 +675,26 @@ const isAdminOrUser = (user) => {
 
 		if (req.query.preview || !isAdminOrUser(req.auth.user)) {
 			q += ' LIMIT 100';
+			revisedQ += ' LIMIT 100';
 		}
 		let a;
+
+		console.log(revisedQ);				
+		/*
 		if (whereValues.length === 0) {
 			a = await client.query(q);
 		} else {
 			a = await client.query(q, whereValues);
 		}
-
+		*/
+		
+		if (whereValues.length === 0) {
+			a = await client.query(revisedQ);
+		} else {
+			a = await client.query(revisedQ, whereValues);
+		}
+		
+		
 		let columns = [];
 		let rows = [];
 
