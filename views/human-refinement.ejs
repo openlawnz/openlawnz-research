@@ -4,11 +4,11 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>OpenLaw NZ : <%= pageTitle %></title>
-		<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro&display=swap">
 		<link rel="stylesheet" href="/global/index.css" />
 		<link rel="stylesheet" href="/human-refinement/index.css" />
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.4.456/pdf.worker.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf.worker.min.js"></script>
 		<script type="module" src="/human-refinement/index.js"></script>
 		<script src="/human-refinement/RowSorter.js"></script>
 	</head>
@@ -64,6 +64,7 @@
 				</div>
 				<div id="pdf">
 					<div id="pdfViewerOuter">
+						<progress id="pdfLoadingPercent" max="100"></progress>
 						<div id="pdfSearchBar">
 							<button id="pdfSearchBarToggle">🔍</button>
 							<div>
@@ -89,15 +90,15 @@
 									<div id="dateSeparated">
 										<div>
 											<label>Day</label>
-											<input type="number" id="dateDay" placeholder="DD" />
+											<input type="number" id="dateDay" min="0" placeholder="DD" />
 										</div>
 										<div>
 											<label>Month</label>
-											<input type="number" id="dateMonth" placeholder="MM" />
+											<input type="number" id="dateMonth" min="0" placeholder="MM" />
 										</div>
 										<div>
 											<label>Year</label>
-											<input type="number" id="dateYear" placeholder="YYYY" />
+											<input type="number" id="dateYear" min="0" placeholder="YYYY" />
 										</div>
 									</div>
 

@@ -10,6 +10,10 @@
 	width: 20vw;
 }
 
+#wrap.loading:after {
+	content: "Loading case set..."
+}
+
 @media only screen and (max-width: 1600px) {
 	#wrap nav {
 		background: #f6f6f6;
@@ -261,6 +265,23 @@ main h2 span {
 	position: relative;
 	overflow-y: hidden;
 }
+
+#pdfLoadingPercent {
+	position: absolute;
+	top: -10px;
+	left: 0;
+	width: 100%;
+	z-index: 2;
+	opacity: 0.7;
+	pointer-events: none;
+	transition: opacity 0.125s;
+	opacity: 0;
+}
+
+#pdfLoadingPercent.visible {
+	opacity: 1;
+}
+
 #pdfViewer {
 	position: relative;
 	overflow-y: auto;
@@ -355,6 +376,8 @@ main h2 span {
 	background: none;
 	border: none;
 	outline: none;
+	margin: 2px; /* To offset the border */
+	cursor: pointer;
 }
 
 #pdfSearchBar input {
@@ -370,7 +393,15 @@ main h2 span {
 	display: block;
 }
 
+#pdfSearchBar.active button {
+	margin: 0;
+}
+
 #pdfSearchNavigation {
+	display: none;
+}
+
+#pdf.loading #pdfSearchBar {
 	display: none;
 }
 

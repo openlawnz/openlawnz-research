@@ -1,30 +1,39 @@
+/*
+This project is deliberately vanilla javascript.
+*/
+
 const $ = (selector, context) => {
 	const found = (context || document).querySelectorAll(selector);
-	return found.length > 1 ? found : found[0];
+	return found.length > 0 ? Array.from(found) : [];
+};
+
+const $1 = (selector, context) => {
+	const found = (context || document).querySelector(selector);
+	return found;
 };
 
 const init = async () => {
-	const dynamicFieldAddTemplate = $('#dynamic-field-template').content;
+	const dynamicFieldAddTemplate = $1('#dynamic-field-template').content;
 
-	const $exportForm = $('#export-form');
-	const $exportDataFormat = $('#export-data-format');
+	const $exportForm = $1('#export-form');
+	const $exportDataFormat = $1('#export-data-format');
 
-	const $searchForm = $('#search-form');
-	const $searchCategoryField = $('#search-category-field');
-	const $searchCaseSetField = $('#search-case-set-field');
-	const $searchStartDate = $('#search-start-date');
-	const $searchEndDate = $('#search-end-date');
+	const $searchForm = $1('#search-form');
+	const $searchCategoryField = $1('#search-category-field');
+	const $searchCaseSetField = $1('#search-case-set-field');
+	const $searchStartDate = $1('#search-start-date');
+	const $searchEndDate = $1('#search-end-date');
 
-	const $dynamicFields = $('.dynamic-fields');
+	const $dynamicFields = $1('.dynamic-fields');
 
-	const $dynamicKeywords = $('#dynamic-keywords');
-	const $dynamicKeywordsAdd = $('#dynamic-keywords-add');
-	const $keywordsFields = $('#keywords-fields');
+	const $dynamicKeywords = $1('#dynamic-keywords');
+	const $dynamicKeywordsAdd = $1('#dynamic-keywords-add');
+	const $keywordsFields = $1('#keywords-fields');
 
-	const $ugcColumns = $('#ugc-columns');
+	const $ugcColumns = $1('#ugc-columns');
 
-	const $results = $('#results');
-	const $resultsTable = $('#results-table');
+	const $results = $1('#results');
+	const $resultsTable = $1('#results-table');
 
 	const ugcColumnsData = await fetch('/api/export/columns').then((c) => c.json());
 
@@ -112,32 +121,25 @@ const init = async () => {
 		if ($searchEndDate.value) {
 			params.set('endDate', $searchEndDate.value);
 		}
-		if ($fixedColumns) {
+		if ($fixedColumns.length > 0) {
 			params.set(
 				'fixedColumns',
-				$fixedColumns.length
-					? Array.from($fixedColumns)
-							.map((f) => f.value)
+				$fixedColumns.map((f) => f.value)
 							.join(',')
-					: $fixedColumns.value
 			);
 		}
 
-		if ($ugcColumns) {
+		if ($ugcColumns.length > 0) {
 			params.set(
 				'ugcColumns',
-				$ugcColumns.length
-					? Array.from($ugcColumns)
-							.map((f) => f.value)
-							.join(',')
-					: $ugcColumns.value
+				$ugcColumns.map((f) => f.value)
+				.join(',')
+			
 			);
 		}
 
 		let $activeKeywordsFields = $('.dynamic-field', $keywordsFields);
-		if (!NodeList.prototype.isPrototypeOf($activeKeywordsFields)) {
-			$activeKeywordsFields = [$activeKeywordsFields];
-		}
+		
 		if ($dynamicKeywords.checked && $activeKeywordsFields.length > 0) {
 			const keywordsFields = Array.from($activeKeywordsFields)
 				.map((f) => f.value)
@@ -190,7 +192,7 @@ const init = async () => {
 
 		if (fixedColumns) {
 			fixedColumns.split(',').forEach((f) => {
-				const $checkbox = $(`.fixed-column[value=${f}]`);
+				const $checkbox = $1(`.fixed-column[value=${f}]`);
 				$checkbox.checked = true;
 			});
 		}
@@ -199,7 +201,7 @@ const init = async () => {
 
 		if (ugcColumns) {
 			ugcColumns.split(',').forEach((f) => {
-				const $checkbox = $(`.ugc-column[value="${f}"]`);
+				const $checkbox = $1(`.ugc-column[value="${f}"]`);
 				$checkbox.checked = true;
 			});
 		}
@@ -209,7 +211,7 @@ const init = async () => {
 			$dynamicKeywords.checked = true;
 			keywordsFields.split(',').forEach((f) => {
 				const keywordsField = dynamicFieldAddTemplate.cloneNode(true);
-				$('input', keywordsField).value = f;
+				$1('input', keywordsField).value = f;
 				$keywordsFields.appendChild(keywordsField);
 			});
 		}
