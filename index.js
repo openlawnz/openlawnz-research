@@ -623,14 +623,17 @@ const isAdminOrUser = (user) => {
 
 		let whereValues = [];
 		let whereConditions = [];
+		let whereConditionsRevisedQ = [];
 
 		if (req.query.startDate) {
 			whereValues.push(req.query.startDate);
-			whereConditions.push(`c.case_date >= $${whereValues.length}`);
+			whereConditions.push(`m.case_date >= $${whereValues.length}`);
+			whereConditionsRevisedQ.push(`c.case_date >= $${whereValues.length}`);
 		}
 		if (req.query.endDate) {
 			whereValues.push(req.query.endDate);
-			whereConditions.push(`c.case_date < $${whereValues.length}`);
+			whereConditions.push(`m.case_date < $${whereValues.length}`);
+			whereConditionsRevisedQ.push(`c.case_date < $${whereValues.length}`);
 		}
 
 		if(!req.query.category) {
@@ -642,13 +645,15 @@ const isAdminOrUser = (user) => {
 		if(category !== "all") {
 			whereValues.push(category)
 			whereConditions.push(`main.category_to_cases.category_id = $${whereValues.length}`);
+			whereConditionsRevisedQ.push(`main.category_to_cases.category_id = $${whereValues.length}`);
 		}
 
 
 
 		if(req.query.caseSetId) {
 			const case_set = await client.query(`SELECT * FROM ugc.random_case_sets WHERE id = $1`, [req.query.caseSetId])
-			whereConditions.push(`c.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
+			whereConditions.push(`m.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
+			whereConditionsRevisedQ.push(`c.id IN ('${case_set.rows[0].case_set.map(c => c.id).join('\',\'')}')`);
 		}
 
 		let revisedQ = `
@@ -658,7 +663,7 @@ const isAdminOrUser = (user) => {
 			FROM main.cases c
     		INNER JOIN main.category_to_cases ON c.id = main.category_to_cases.case_id
     		${joinQueryFragment.join(' ')}
-    		${whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : ""}
+    		${whereConditionsRevisedQ.length > 0 ? "WHERE " + whereConditionsRevisedQ.join(" AND ") : ""}
     		GROUP BY ${groupbyQueryFragment.join(',')}
     		ORDER BY c.id
     		) as ol ${lateralJoins.map((l) => l.sql).join('\n')}`;
