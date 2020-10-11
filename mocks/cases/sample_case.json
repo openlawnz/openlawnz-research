@@ -1,0 +1,32 @@
+{
+	"caseMeta": {
+		"id": "sample_case.pdf",
+		"caseName": "Sample Case",
+		"pdfJSON": "ocrs/sample_case.pdf",
+		"pdfURL": "pdfs/sample_case.pdf"
+	},
+	"facets": [
+		{
+			"id": "ff8d5c5e-7823-4439-87c8-3d9a09ca626d",
+			"name": "Sample Boolean Facet",
+			"type": "boolean",
+			"completedCount": "0",
+			"value": null,
+			"not_applicable": null,
+			"unsure": null,
+			"description": "Sample Description",
+			"options": [
+				{ "value": "conseq", "wholeWord": false }
+			]
+		},
+		{
+			"id": "b8973001-7b94-4a06-87b0-d1b5721c1ec0",
+			"name": "Sample Date Facet",
+			"type": "date",
+			"completedCount": "0",
+			"value": null,
+			"not_applicable": null,
+			"unsure": null
+		}
+	]
+}

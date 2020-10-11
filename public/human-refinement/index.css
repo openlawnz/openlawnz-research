@@ -8,6 +8,8 @@
 	padding: 20px;
 	box-sizing: border-box;
 	width: 20vw;
+	display: flex;
+	flex-direction: column;
 }
 
 #wrap.loading:after {
@@ -47,7 +49,7 @@
 	}
 
 	#wrap nav:hover {
-		width: 20vw;
+		width: 30vw;
 	}
 
 	#wrap nav:hover:after {
@@ -82,6 +84,7 @@
 	position: absolute;
 	top: 0;
 	left: 0;
+	width: 100%;
 }
 
 #casesList table tr.active {
@@ -245,6 +248,11 @@ main h2 span {
 
 #facetBooleanHeadingDetails {
 	margin: 1em 0;
+}
+
+#facetBooleanHeadingDetails summary {
+	cursor: pointer;
+	outline: 0;
 }
 
 #pdf {
@@ -442,8 +450,17 @@ main h2 span {
 	cursor: pointer;
 }
 
+#selectCaseSetForm div {
+	display: flex;
+}
+
 #selectCaseFormList {
-	width: 150px;
+	width: calc(100% - 50px);
+	margin-right: 10px;
+}
+
+#selectCaseSetForm div button {
+	width: 60px;
 }
 
 #randomDataSetSize {
@@ -498,4 +515,5 @@ main h2 span {
 .facetIcon {
 	float: right;
 	cursor: pointer;
+	margin-left: 10px;
 }

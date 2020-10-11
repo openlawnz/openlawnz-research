@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index",
     "dev": "nodemon -r dotenv/config index",
+    "dev:mock": "nodemon -r dotenv/config mock-index",
     "test": "jest tests/**/*.test.js --coverage"
   },
   "dependencies": {

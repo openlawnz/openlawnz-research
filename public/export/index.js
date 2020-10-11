@@ -17,6 +17,7 @@ const init = async () => {
 
 	const $exportForm = $1('#export-form');
 	const $exportDataFormat = $1('#export-data-format');
+	const $resultsHeading = $1("#results-heading");
 
 	const $searchForm = $1('#search-form');
 	const $searchCategoryField = $1('#search-category-field');
@@ -64,6 +65,7 @@ const init = async () => {
 		fetch(`/api/export/search?` + params.toString())
 			.then((t) => t.json())
 			.then((results) => {
+				$resultsHeading.classList.add('active')
 				$results.style.display = 'block';
 				if (results.total > 0) {
 					results.columns = results.columns.slice(1);

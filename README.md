@@ -1,7 +1,7 @@
 # OpenLaw NZ Research
 This software faciliates analysis of case law data at scale, by facilitating fast and efficient manual data extraction from case law, and enablinhg the export of case law data (both manually and autonomously extracted) in a machine-readable format.
 
-This software is proof of concept.
+**This software is proof of concept.**
 
 ## Prerequisites
 
@@ -9,13 +9,15 @@ You must have the following installed:
 
 - Node & NPM
 
-Make a `.env` file in the root directory, with the variables in `.env.sample`. 
+Make a `.env` file in the root directory, with the variables in `.env.sample`. Adjust the users and roles if you want to.
 
-- Database must be in schema from /openlawnz-database/.
+> If you are just interested in doing front-end work you don't need to configure anything else.
 
-- PDF_JSON_BASE_PATH is the path where the interface will look for OCR'd PDF files in JSON format. Data must be from  Azure Cognitive Services Vision 3.0 preview. This data provides the text of each case, and the location of each word on each page.
+Otherwise you'll need to set up the other parameters.
 
-- PDF_BASE_PATH is where the PDFs will be loaded from for display.
+- `PDF_JSON_BASE_PATH` is the path where the interface will look for OCR'd PDF files in JSON format. Data must be from  Azure Cognitive Services Vision 3.0 preview. This data provides the text of each case, and the location of each word on each page.
+
+- `PDF_BASE_PATH` is where the PDFs will be loaded from for display.
 
 
 ## Installation and Use
@@ -27,8 +29,11 @@ Install
 Run (locally)
 
     npm run dev
+    npm run dev:mock
 
-Visit: http://localhost:8082
+`npm run dev` - visit: http://localhost:8082
+
+`npm run dev:mock` - visit http://localhost:8083
 
 ## Details
 
