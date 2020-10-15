@@ -9,7 +9,7 @@ You must have the following installed:
 
 - Node & NPM
 
-Make a `.env` file in the root directory, with the variables in `.env.sample`. Adjust the users and roles if you want to.
+Make a `.env` file in the root directory, with the variables in `.env.sample` so that it would be easy for you. Adjust the users and roles if you want to give to anyone.
 
 > If you are just interested in doing front-end work you don't need to configure anything else.
 
